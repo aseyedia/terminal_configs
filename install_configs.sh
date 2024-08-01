@@ -3,7 +3,7 @@
 # Set up variables
 CONFIG_DIR="$HOME/.config"
 BACKUP_DIR="$HOME/.config_backup_$(date +%Y%m%d_%H%M%S)"
-SOURCE_DIR="$(pwd)/terminal_configs"
+SOURCE_DIR="$(pwd)"
 
 # Function to backup and replace a configuration
 backup_and_replace() {
