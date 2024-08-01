@@ -3,7 +3,7 @@
 # Set up variables
 CONFIG_DIR="$HOME/.config"
 BACKUP_DIR="$HOME/.config_backup_$(date +%Y%m%d_%H%M%S)"
-SOURCE_DIR="$HOME/terminal_configs"
+SOURCE_DIR="$(pwd)/terminal_configs"
 
 # Function to backup and replace a configuration
 backup_and_replace() {
@@ -39,6 +39,7 @@ if [ -f "$CONFIG_DIR/tmux.conf" ]; then
 fi
 if [ -f "$SOURCE_DIR/tmux/tmux.conf" ]; then
     echo "Replacing tmux.conf..."
+    mkdir -p "$CONFIG_DIR/tmux"
     cp "$SOURCE_DIR/tmux/tmux.conf" "$CONFIG_DIR/tmux.conf"
 fi
 
