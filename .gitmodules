@@ -1,3 +1,3 @@
 [submodule "kickstart.nvim"]
-	path = kickstart.nvim
+	path = nvim
 	url = https://github.com/aseyedia/kickstart.nvim.git
