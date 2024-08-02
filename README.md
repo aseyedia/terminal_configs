@@ -7,3 +7,5 @@ https://github.com/alacritty/alacritty-theme
 https://hamvocke.com/blog/a-guide-to-customizing-your-tmux-conf/
 
 https://www.seanh.cc/2020/12/30/how-to-make-tmux's-windows-behave-like-browser-tabs/
+
+https://medium.com/airfrance-klm/beautify-your-iterm2-and-prompt-40f148761a49
