@@ -30,20 +30,9 @@ backup_and_replace() {
 # Create backup directory
 mkdir -p "$BACKUP_DIR"
 
-# Backup and replace configurations
-backup_and_replace "alacritty"
 backup_and_replace "nvim"
 
-# Handle tmux.conf specially (it's a file, not a directory)
-if [ -f "$CONFIG_DIR/tmux.conf" ]; then
-    echo "Backing up existing tmux.conf..."
-    mv "$CONFIG_DIR/tmux.conf" "$BACKUP_DIR/tmux.conf"
-fi
-if [ -f "$SOURCE_DIR/tmux/tmux.conf" ]; then
-    echo "Replacing tmux.conf..."
-    mkdir -p "$CONFIG_DIR/tmux"
-    cp "$SOURCE_DIR/tmux/tmux.conf" "$CONFIG_DIR/tmux.conf"
-fi
+tmux source tmux.conf
 
 echo "Configuration backup and replacement complete."
 echo "Backups are stored in $BACKUP_DIR"
