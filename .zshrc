@@ -40,6 +40,9 @@ ZSH_THEME="powerlevel10k/powerlevel10k"
 # Uncomment the following line to change how often to auto-update (in days).
 # zstyle ':omz:update' frequency 13
 
+# Forces Zsh to use hosts in ~/.ssh/config rather than ~/.ssh/known_hosts
+zstyle ':completion:*:ssh:*' hosts `awk '/^Host / {print $2}' ~/.ssh/config`
+
 # Uncomment the following line if pasting URLs and other text is messed up.
 # DISABLE_MAGIC_FUNCTIONS="true"
 
