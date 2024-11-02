@@ -289,6 +289,9 @@ install_zoxide() {
         if [ "$OS" = "macos" ] && command_exists brew; then
             execute "brew install zoxide"
             log_success "Zoxide installed via Homebrew."
+        elif [ "$OS" = "linux" ]; then
+            execute "curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh"
+            log_success "Zoxide installed via curl on Linux."
         elif command_exists cargo; then
             execute "cargo install zoxide"
             log_success "Zoxide installed via Cargo."
