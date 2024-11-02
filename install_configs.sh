@@ -46,7 +46,7 @@ execute() {
     if [ "$DRY_RUN" = true ]; then
         echo -e "\033[1;35m[DRY-RUN]\033[0m $1"
     else
-        bash -c "$1"
+        eval "$1"
     fi
 }
 
@@ -232,6 +232,9 @@ backup_and_replace() {
     local src=$1
     local dest=$2
 
+    # Make the destination path relative to the home directory
+    local relative_dest="${dest#$HOME/}"
+
     if [ -L "$dest" ]; then
         # If it's already a symlink to the source, do nothing
         if [ "$(readlink "$dest")" = "$src" ]; then
@@ -244,9 +247,9 @@ backup_and_replace() {
         fi
     elif [ -e "$dest" ]; then
         # If the destination exists and is not a symlink, backup and replace
-        log "Backing up existing $(basename "$dest") to $BACKUP_DIR..."
-        execute "mkdir -p \"$(dirname \"$BACKUP_DIR/$dest\")\""
-        execute "mv \"$dest\" \"$BACKUP_DIR/\""
+        log "Backing up existing $(basename "$dest") to $BACKUP_DIR/$relative_dest..."
+        execute "mkdir -p \"$(dirname \"$BACKUP_DIR/$relative_dest\")\""
+        execute "mv \"$dest\" \"$BACKUP_DIR/$relative_dest\""
         log_success "Existing $(basename "$dest") backed up."
 
         log "Creating symlink for $(basename "$dest")..."
