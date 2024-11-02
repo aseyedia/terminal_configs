@@ -44,9 +44,11 @@ log_error() {
 # Function to handle dry-run
 execute() {
     if [ "$DRY_RUN" = true ]; then
-        echo -e "\033[1;35m[DRY-RUN]\033[0m $1"
+        # Join all arguments with spaces for dry-run display
+        echo -e "\033[1;35m[DRY-RUN]\033[0m $*"
     else
-        eval "$1"
+        # Execute the command with arguments safely
+        "$@"
     fi
 }
 
@@ -131,7 +133,7 @@ install_packages() {
     log "Using package manager: $PM"
 
     log "Updating package lists..."
-    execute "$UPDATE_CMD"
+    execute $UPDATE_CMD
 
     REQUIRED_PACKAGES=(git zsh tmux wget curl)
 
@@ -139,7 +141,7 @@ install_packages() {
     for pkg in "${REQUIRED_PACKAGES[@]}"; do
         if ! command_exists "$pkg"; then
             log "Installing $pkg..."
-            execute "$INSTALL_CMD $pkg"
+            execute $INSTALL_CMD "$pkg"
             log_success "$pkg installed."
         else
             log "$pkg is already installed."
@@ -175,7 +177,7 @@ install_neovim_linux() {
     # Download Neovim if not already downloaded
     if [ ! -f "$NVIM_TAR" ]; then
         log "Downloading Neovim from $NVIM_URL..."
-        execute "curl -LO \"$NVIM_URL\""
+        execute curl -LO "$NVIM_URL"
     else
         log "Neovim tarball already exists. Skipping download."
     fi
@@ -183,8 +185,8 @@ install_neovim_linux() {
     # Extract Neovim
     if [ ! -d "$NVIM_INSTALL_DIR" ]; then
         log "Extracting Neovim to $NVIM_INSTALL_DIR..."
-        execute "sudo rm -rf \"$NVIM_INSTALL_DIR\""
-        execute "sudo tar -C /opt -xzf \"$NVIM_TAR\""
+        execute sudo rm -rf "$NVIM_INSTALL_DIR"
+        execute sudo tar -C /opt -xzf "$NVIM_TAR"
         log_success "Neovim extracted to $NVIM_INSTALL_DIR."
     else
         log "Neovim is already installed in $NVIM_INSTALL_DIR."
@@ -193,14 +195,14 @@ install_neovim_linux() {
     # Cleanup downloaded tar.gz
     if [ -f "$NVIM_TAR" ]; then
         log "Removing downloaded tarball..."
-        execute "rm \"$NVIM_TAR\""
+        execute rm "$NVIM_TAR"
     fi
 
     # Add Neovim to PATH by appending to shell config if not already present
     NVIM_PATH_ENTRY="/opt/nvim-linux64/bin"
     if ! grep -Fxq "export PATH=\"\$PATH:$NVIM_PATH_ENTRY\"" "$HOME/.zshrc" 2>/dev/null; then
         log "Adding Neovim to PATH in .zshrc..."
-        execute "echo 'export PATH=\"\$PATH:$NVIM_PATH_ENTRY\"' >> \"$HOME/.zshrc\""
+        execute echo "export PATH=\"\$PATH:$NVIM_PATH_ENTRY\"" >> "$HOME/.zshrc"
         log_success "Neovim path added to .zshrc."
     else
         log "Neovim path already exists in .zshrc."
@@ -222,7 +224,7 @@ install_neovim_macos() {
         log "Neovim is already installed via Homebrew."
     else
         log "Installing Neovim via Homebrew..."
-        execute "brew install neovim"
+        execute brew install neovim
         log_success "Neovim installed via Homebrew."
     fi
 }
@@ -232,8 +234,26 @@ backup_and_replace() {
     local src=$1
     local dest=$2
 
+    # Ensure 'dest' is within the home directory
+    if [[ "$dest" != "$HOME/"* ]]; then
+        log_error "Destination $dest is not inside the home directory ($HOME). Skipping backup."
+        return
+    fi
+
     # Make the destination path relative to the home directory
     local relative_dest="${dest#$HOME/}"
+
+    # Get the directory part of the relative_dest
+    local relative_dest_dir="$(dirname "$relative_dest")"
+
+    # Create the backup directory if it's not the home directory
+    if [ "$relative_dest_dir" != "." ]; then
+        log "Backing up existing $(basename "$dest") to $BACKUP_DIR/$relative_dest_dir..."
+        execute mkdir -p "$BACKUP_DIR/$relative_dest_dir"
+    else
+        log "Backing up existing $(basename "$dest") to $BACKUP_DIR..."
+        execute mkdir -p "$BACKUP_DIR"
+    fi
 
     if [ -L "$dest" ]; then
         # If it's already a symlink to the source, do nothing
@@ -242,23 +262,22 @@ backup_and_replace() {
             return
         else
             log "Symlink for $(basename "$dest") points to a different source. Updating symlink..."
-            execute "ln -sfn \"$src\" \"$dest\""
+            execute ln -sfn "$src" "$dest"
             log_success "Symlink for $(basename "$dest") updated."
         fi
     elif [ -e "$dest" ]; then
         # If the destination exists and is not a symlink, backup and replace
         log "Backing up existing $(basename "$dest") to $BACKUP_DIR/$relative_dest..."
-        execute "mkdir -p \"$(dirname \"$BACKUP_DIR/$relative_dest\")\""
-        execute "mv \"$dest\" \"$BACKUP_DIR/$relative_dest\""
+        execute mv "$dest" "$BACKUP_DIR/$relative_dest"
         log_success "Existing $(basename "$dest") backed up."
 
         log "Creating symlink for $(basename "$dest")..."
-        execute "ln -s \"$src\" \"$dest\""
+        execute ln -s "$src" "$dest"
         log_success "Symlink for $(basename "$dest") created."
     else
         # If the destination does not exist, create symlink
         log "Creating symlink for $(basename "$dest")..."
-        execute "ln -s \"$src\" \"$dest\""
+        execute ln -s "$src" "$dest"
         log_success "Symlink for $(basename "$dest") created."
     fi
 }
@@ -267,7 +286,7 @@ backup_and_replace() {
 install_oh_my_zsh() {
     if [ ! -d "$OH_MY_ZSH_DIR" ]; then
         log "Installing Oh My Zsh..."
-        execute "RUNZSH=no KEEP_ZSHRC=yes sh -c \"\$(wget -O- https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)\""
+        execute RUNZSH=no KEEP_ZSHRC=yes sh -c "$(wget -O- https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
         log_success "Oh My Zsh installed."
     else
         log "Oh My Zsh is already installed."
@@ -278,7 +297,7 @@ install_oh_my_zsh() {
 install_powerlevel10k() {
     if [ ! -d "$POWERLEVEL10K_DIR" ]; then
         log "Installing Powerlevel10k theme..."
-        execute "git clone --depth=1 https://github.com/romkatv/powerlevel10k.git \"$POWERLEVEL10K_DIR\""
+        execute git clone --depth=1 https://github.com/romkatv/powerlevel10k.git "$POWERLEVEL10K_DIR"
         log_success "Powerlevel10k installed."
     else
         log "Powerlevel10k is already installed."
@@ -290,13 +309,13 @@ install_zoxide() {
     if ! command_exists zoxide; then
         log "Installing Zoxide..."
         if [ "$OS" = "macos" ] && command_exists brew; then
-            execute "brew install zoxide"
+            execute brew install zoxide
             log_success "Zoxide installed via Homebrew."
         elif [ "$OS" = "linux" ]; then
-            execute "curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh"
+            execute curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh
             log_success "Zoxide installed via curl on Linux."
         elif command_exists cargo; then
-            execute "cargo install zoxide"
+            execute cargo install zoxide
             log_success "Zoxide installed via Cargo."
         else
             log_error "Zoxide installation method not found. Please install it manually."
@@ -310,7 +329,7 @@ install_zoxide() {
 # Function to initialize Git submodules
 initialize_git_submodules() {
     log "Initializing Git submodules..."
-    execute "git submodule update --init --recursive"
+    execute git submodule update --init --recursive
     log_success "Git submodules initialized."
 }
 
@@ -322,10 +341,10 @@ set_zsh_as_default() {
         # Ensure Zsh is in /etc/shells
         if ! grep -Fxq "$(which zsh)" /etc/shells; then
             log "Adding $(which zsh) to /etc/shells..."
-            execute "echo \"$(which zsh)\" | sudo tee -a /etc/shells"
+            execute sudo tee -a /etc/shells <<< "$(which zsh)"
             log_success "Zsh added to /etc/shells."
         fi
-        execute "chsh -s \"$(which zsh)\""
+        execute chsh -s "$(which zsh)"
         log_success "Default shell changed to Zsh. Please log out and log back in to apply the change."
     else
         log "Zsh is already the default shell."
@@ -337,27 +356,13 @@ reload_tmux() {
     if command_exists tmux; then
         if tmux ls &>/dev/null; then
             log "Reloading tmux configuration..."
-            execute "tmux source-file \"$SOURCE_DIR/tmux.conf\""
+            execute tmux source-file "$SOURCE_DIR/tmux.conf"
             log_success "Tmux configuration reloaded."
         else
             log "No active tmux sessions found. Skipping tmux reload."
         fi
     else
         log "Tmux is not installed. Skipping tmux reload."
-    fi
-}
-
-# Function to ensure PATH modifications are idempotent
-ensure_path() {
-    local path_entry=$1
-    local shell_config=$2
-
-    if ! grep -Fxq "export PATH=\"\$PATH:$path_entry\"" "$shell_config" 2>/dev/null; then
-        log "Adding $path_entry to PATH in $shell_config..."
-        execute "echo 'export PATH=\"\$PATH:$path_entry\"' >> \"$shell_config\""
-        log_success "$path_entry added to PATH in $shell_config."
-    else
-        log "$path_entry is already in PATH in $shell_config."
     fi
 }
 
@@ -396,7 +401,7 @@ main() {
     if [ "$DRY_RUN" = false ]; then
         if [ ! -d "$BACKUP_DIR" ]; then
             log "Creating backup directory at $BACKUP_DIR..."
-            execute "mkdir -p \"$BACKUP_DIR\""
+            execute mkdir -p "$BACKUP_DIR"
             log_success "Backup directory created."
         else
             log "Backup directory already exists at $BACKUP_DIR."
@@ -435,7 +440,7 @@ main() {
     # Source the new Zsh configuration if the script is run in Zsh
     if [ "$SHELL" = "$(which zsh)" ]; then
         log "Sourcing Zsh configuration..."
-        execute "source \"$HOME/.zshrc\""
+        execute source "$HOME/.zshrc"
         log_success "Zsh configuration sourced."
     else
         log "Current shell is not Zsh. Skipping sourcing of .zshrc."
@@ -456,4 +461,3 @@ main
 # ================================
 # End of Script
 # ================================
-
