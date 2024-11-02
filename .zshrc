@@ -41,7 +41,7 @@ ZSH_THEME="powerlevel10k/powerlevel10k"
 # zstyle ':omz:update' frequency 13
 
 # Forces Zsh to use hosts in ~/.ssh/config rather than ~/.ssh/known_hosts
-zstyle ':completion:*:ssh:*' hosts `awk '/^Host / {print $2}' ~/.ssh/config`
+zstyle ':completion:*:ssh:*' hosts $(awk '/^Host / {print $2}' ~/.ssh/config)
 
 # Uncomment the following line if pasting URLs and other text is messed up.
 # DISABLE_MAGIC_FUNCTIONS="true"
@@ -84,7 +84,7 @@ zstyle ':completion:*:ssh:*' hosts `awk '/^Host / {print $2}' ~/.ssh/config`
 # Add wisely, as too many plugins slow down shell startup.
 # ZOXIDE_CMD_OVERRIDE="cd"
 # eval "$(zoxide init --cmd cd zsh)"
-plugins=(git conda-env common-aliases fzf) # zoxide)
+plugins=(git conda-env common-aliases fzf zoxide)
 
 source $ZSH/oh-my-zsh.sh
 
@@ -119,7 +119,11 @@ source $ZSH/oh-my-zsh.sh
 
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
-eval "$(/opt/homebrew/bin/brew shellenv)"
+
+# Initialize Homebrew if it's installed
+if command -v brew &>/dev/null; then
+    eval "$(/usr/bin/env brew shellenv)"
+fi
 
 # >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!
@@ -151,5 +155,6 @@ export CLICOLOR=1
 export LSCOLORS="ExGxFxDxBxEgEdxbxgxhxd"
 
 # export PATH=$PATH:/Users/seyediana1/.local/bin
+# export PATH=$PATH:/home/pi/.local/bin
 
 eval "$(zoxide init --cmd cd zsh)"

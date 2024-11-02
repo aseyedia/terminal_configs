@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -euo pipefail
+set -exuo pipefail
 
 # ================================
 # Configuration Variables
@@ -46,7 +46,7 @@ execute() {
     if [ "$DRY_RUN" = true ]; then
         echo -e "\033[1;35m[DRY-RUN]\033[0m $1"
     else
-        eval "$1"
+        bash -c "$1"
     fi
 }
 
