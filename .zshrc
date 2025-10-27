@@ -1,129 +1,64 @@
-# If you come from bash you might have to change your $PATH
+# ============================================================================
+# PATH Configuration
+# ============================================================================
 export PATH=$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH
 
-# Path to your Oh My Zsh installation.
+# ============================================================================
+# Oh My Zsh Configuration
+# ============================================================================
 export ZSH="$HOME/.oh-my-zsh"
+ZSH_THEME=""  # Using Pure theme via zplug instead
 
-# Set name of the theme to load --- if set to "random", it will
-# load a random theme each time Oh My Zsh is loaded, in which case,
-# to know which specific one was loaded, run: echo $RANDOM_THEME
-# See https://github.com/ohmyzsh/ohmyzsh/wiki/Themes
-ZSH_THEME=""
+# Oh My Zsh Settings
+DISABLE_UNTRACKED_FILES_DIRTY="true"  # Faster git status for large repos
+HIST_STAMPS="yyyy-mm-dd"
 
-# Set list of themes to pick from when loading at random
-# Setting this variable when ZSH_THEME=random will cause zsh to load
-# a theme from this variable instead of looking in $ZSH/themes/
-# If set to an empty array, this variable will have no effect.
-# ZSH_THEME_RANDOM_CANDIDATES=( "robbyrussell" "agnoster" )
-
-# Uncomment the following line to use case-sensitive completion.
-# CASE_SENSITIVE="true"
-
-# Uncomment the following line to use hyphen-insensitive completion.
-# Case-sensitive completion must be off. _ and - will be interchangeable.
-# HYPHEN_INSENSITIVE="true"
-
-# Uncomment one of the following lines to change the auto-update behavior
-# zstyle ':omz:update' mode disabled  # disable automatic updates
-# zstyle ':omz:update' mode auto      # update automatically without asking
-# zstyle ':omz:update' mode reminder  # just remind me to update when it's time
-
-# Uncomment the following line to change how often to auto-update (in days).
-# zstyle ':omz:update' frequency 13
-
-# Uncomment the following line if pasting URLs and other text is messed up.
-# DISABLE_MAGIC_FUNCTIONS="true"
-
-# Uncomment the following line to disable colors in ls.
-# DISABLE_LS_COLORS="true"
-
-# Uncomment the following line to disable auto-setting terminal title.
-# DISABLE_AUTO_TITLE="true"
-
-# Uncomment the following line to enable command auto-correction.
-# ENABLE_CORRECTION="true"
-
-# Uncomment the following line to display red dots whilst waiting for completion.
-# You can also set it to another string to have that shown instead of the default red dots.
-# e.g. COMPLETION_WAITING_DOTS="%F{yellow}waiting...%f"
-# Caution: this setting can cause issues with multiline prompts in zsh < 5.7.1 (see #5765)
-# COMPLETION_WAITING_DOTS="true"
-
-# Uncomment the following line if you want to disable marking untracked files
-# under VCS as dirty. This makes repository status check for large repositories
-# much, much faster.
-# DISABLE_UNTRACKED_FILES_DIRTY="true"
-
-# Uncomment the following line if you want to change the command execution time
-# stamp shown in the history command output.
-# You can set one of the optional three formats:
-# "mm/dd/yyyy"|"dd.mm.yyyy"|"yyyy-mm-dd"
-# or set a custom format using the strftime function format specifications,
-# see 'man strftime' for details.
-# HIST_STAMPS="mm/dd/yyyy"
-
-# Would you like to use another custom folder than $ZSH/custom?
-# ZSH_CUSTOM=/path/to/new-custom-folder
-
-# Which plugins would you like to load?
-# Standard plugins can be found in $ZSH/plugins/
-# Custom plugins may be added to $ZSH_CUSTOM/plugins/
-# Example format: plugins=(rails git textmate ruby lighthouse)
-# Add wisely, as too many plugins slow down shell startup.
+# Minimal plugins for OMZ (rest handled by zplug)
 plugins=(git)
 
+# Source Oh My Zsh
 source $ZSH/oh-my-zsh.sh
 
-# User configuration
+# ============================================================================
+# Environment Variables
+# ============================================================================
+export LANG=en_US.UTF-8
+export EDITOR='nvim'
+export VISUAL='nvim'
 
-# export MANPATH="/usr/local/man:$MANPATH"
-
-# You may need to manually set your language environment
-# export LANG=en_US.UTF-8
-
-# Preferred editor for local and remote sessions
-# if [[ -n $SSH_CONNECTION ]]; then
-#   export EDITOR='vim'
-# else
-#   export EDITOR='nvim'
-# fi
-
-# Compilation flags
-# export ARCHFLAGS="-arch $(uname -m)"
-
-# Set personal aliases, overriding those provided by Oh My Zsh libs,
-# plugins, and themes. Aliases can be placed here, though Oh My Zsh
-# users are encouraged to define aliases within a top-level file in
-# the $ZSH_CUSTOM folder, with .zsh extension. Examples:
-# - $ZSH_CUSTOM/aliases.zsh
-# - $ZSH_CUSTOM/macos.zsh
-# For a full list of active aliases, run `alias`.
-#
-# Example aliases
-# alias zshconfig="mate ~/.zshrc"
-# alias ohmyzsh="mate ~/.oh-my-zsh"
-
+# ============================================================================
+# Zplug Plugin Manager
+# ============================================================================
 export ZPLUG_HOME=~/.zplug
+
+# Check if zplug is installed
+if [[ ! -d $ZPLUG_HOME ]]; then
+    echo "Installing zplug..."
+    git clone https://github.com/zplug/zplug $ZPLUG_HOME
+fi
+
 source $ZPLUG_HOME/init.zsh
 
+# ============================================================================
+# Zplug Plugins
+# ============================================================================
+# Theme
 zplug "mafredri/zsh-async", from:github
 zplug "sindresorhus/pure", use:pure.zsh, from:github, as:theme
-zplug "plugins/nvm", from:oh-my-zsh
-zplug "plugins/git", from:oh-my-zsh
 
-ZOXIDE_CMD_OVERRIDE="cd"
+# OMZ plugins via zplug
+zplug "plugins/nvm", from:oh-my-zsh
 zplug "plugins/zoxide", from:oh-my-zsh
 zplug "plugins/tmux", from:oh-my-zsh
 zplug "plugins/common-aliases", from:oh-my-zsh
 zplug "plugins/aliases", from:oh-my-zsh
 zplug "plugins/alias-finder", from:oh-my-zsh
 
-zplug "junegunn/fzf", use:"shell/*.zsh", defer:2
-zplug "zsh-users/zsh-syntax-highlighting", defer:2
+# Enhanced shell features
+zplug "zsh-users/zsh-completions", depth:1
 zplug "zsh-users/zsh-autosuggestions", as:plugin, defer:2
-zplug 'zsh-users/zsh-completions', depth:1 # more completions
+zplug "zsh-users/zsh-syntax-highlighting", defer:2
 
-zplug load
 # Install plugins if there are plugins that have not been installed
 if ! zplug check --verbose; then
     printf "Install? [y/N]: "
@@ -132,4 +67,63 @@ if ! zplug check --verbose; then
     fi
 fi
 
+# Load all plugins
+zplug load
+
+# ============================================================================
+# FZF Configuration
+# ============================================================================
+
+# Auto-install FZF if not present
+if ! command -v fzf &>/dev/null && [[ ! -d ~/.fzf ]]; then
+    echo "FZF not found. Installing..."
+    git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
+    ~/.fzf/install --key-bindings --completion --no-update-rc
+fi
+
+# Initialize FZF if installed via Homebrew
+if [[ -f /opt/homebrew/opt/fzf/shell/completion.zsh ]]; then
+    source /opt/homebrew/opt/fzf/shell/completion.zsh
+fi
+
+if [[ -f /opt/homebrew/opt/fzf/shell/key-bindings.zsh ]]; then
+    source /opt/homebrew/opt/fzf/shell/key-bindings.zsh
+fi
+
+# Initialize FZF if installed via git
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+
+# FZF default options (fixes the height error)
+export FZF_DEFAULT_OPTS="
+  --height=40%
+  --border
+  --inline-info
+  --color=fg:#c0caf5,bg:#1a1b26,hl:#bb9af7
+  --color=fg+:#c0caf5,bg+:#1a1b26,hl+:#7dcfff
+  --color=info:#7aa2f7,prompt:#7dcfff,pointer:#7dcfff
+  --color=marker:#9ece6a,spinner:#9ece6a,header:#9ece6a
+"
+
+# FZF file search (respects .gitignore)
+export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'
+export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
+export FZF_ALT_C_COMMAND='fd --type d --hidden --follow --exclude .git'
+
+# ============================================================================
+# Zoxide Configuration
+# ============================================================================
+ZOXIDE_CMD_OVERRIDE="cd"
+
+# ============================================================================
+# Custom Aliases
+# ============================================================================
+alias vim='nvim'
+alias vi='nvim'
+alias zshconfig="nvim ~/.zshrc"
+alias zshreload="source ~/.zshrc"
+
+# ============================================================================
+# Performance Optimizations
+# ============================================================================
+# Skip global compinit as OMZ already handles it
+skip_global_compinit=1
