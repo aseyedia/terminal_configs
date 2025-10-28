@@ -109,6 +109,11 @@ export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'
 export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
 export FZF_ALT_C_COMMAND='fd --type d --hidden --follow --exclude .git'
 
+# FZF preview with bat
+if command -v bat &>/dev/null; then
+    export FZF_CTRL_T_OPTS="--preview 'bat --color=always --style=numbers --line-range=:500 {}'"
+fi
+
 # ============================================================================
 # Zoxide Configuration
 # ============================================================================
@@ -121,6 +126,20 @@ alias vim='nvim'
 alias vi='nvim'
 alias zshconfig="nvim ~/.zshrc"
 alias zshreload="source ~/.zshrc"
+
+# Bat (better cat) integration
+if command -v bat &>/dev/null; then
+    alias cat='bat'
+    alias bathelp='bat --plain --language=help'
+    
+    # Help function with bat
+    help() {
+        "$@" --help 2>&1 | bathelp
+    }
+    
+    # Man pages with bat
+    export MANPAGER="sh -c 'col -bx | bat -l man -p'"
+fi
 
 # ============================================================================
 # Performance Optimizations
