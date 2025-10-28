@@ -476,17 +476,28 @@ install_eza_linux() {
 install_nvim_kickstart() {
     print_section "Neovim Kickstart Configuration"
     
-    if ! command -v nvim &> /dev/null; then
+    # Check if nvim is in PATH or was just installed
+    local nvim_cmd=""
+    if command -v nvim &> /dev/null; then
+        nvim_cmd="nvim"
+    elif [[ -x /opt/nvim-linux-x86_64/bin/nvim ]]; then
+        nvim_cmd="/opt/nvim-linux-x86_64/bin/nvim"
+    elif [[ -x /opt/nvim-macos-arm64/bin/nvim ]]; then
+        nvim_cmd="/opt/nvim-macos-arm64/bin/nvim"
+    elif [[ -x /opt/nvim-macos-x86_64/bin/nvim ]]; then
+        nvim_cmd="/opt/nvim-macos-x86_64/bin/nvim"
+    else
         print_warning "Neovim is not installed. Skipping kickstart configuration."
         return 1
     fi
     
     local nvim_config_dir="${XDG_CONFIG_HOME:-$HOME/.config}/nvim"
+    local should_install=false
     
     if [[ -d "$nvim_config_dir" ]]; then
         print_warning "Neovim configuration already exists at $nvim_config_dir"
         
-        if ask_yes_no "Install kickstart.nvim configuration?"; then
+        if ask_yes_no "Replace with kickstart.nvim configuration?"; then
             if ask_yes_no "Backup existing configuration?" "y"; then
                 local backup_path="$nvim_config_dir.backup.$(date +%Y%m%d_%H%M%S)"
                 if $DRY_RUN; then
@@ -502,19 +513,33 @@ install_nvim_kickstart() {
                     rm -rf "$nvim_config_dir"
                 fi
             fi
+            should_install=true
         else
             print_info "Skipped kickstart.nvim installation"
-            return 1
+            return 0
+        fi
+    else
+        # No existing config, ask if they want to install
+        if ask_yes_no "Install kickstart.nvim configuration?" "y"; then
+            should_install=true
+        else
+            print_info "Skipped kickstart.nvim installation"
+            return 0
         fi
     fi
     
-    if ask_yes_no "Install kickstart.nvim configuration?" "y"; then
+    # Proceed with installation
+    if $should_install; then
         if $DRY_RUN; then
             print_dryrun "Would clone kickstart.nvim to $nvim_config_dir"
         else
             if git clone https://github.com/aseyedia/kickstart.nvim.git "$nvim_config_dir"; then
                 print_success "Kickstart.nvim installed successfully"
-                print_info "Run 'nvim' to complete the setup"
+                if [[ "$nvim_cmd" == "nvim" ]]; then
+                    print_info "Run 'nvim' to complete the setup"
+                else
+                    print_info "Run '$nvim_cmd' to complete the setup (or restart your shell and run 'nvim')"
+                fi
             else
                 print_error "Failed to clone kickstart.nvim"
                 return 1
