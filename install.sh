@@ -294,11 +294,19 @@ install_optional_tools() {
     echo "  • zoxide   - Smarter cd command"
     echo "  • ripgrep  - Fast text search"
     echo "  • bat      - Better cat with syntax highlighting"
-    echo "  • exa      - Modern ls replacement"
+    echo "  • eza      - Modern ls replacement"
     echo ""
     
     if ! command -v brew &> /dev/null; then
         print_warning "Homebrew not found. Install from: https://brew.sh"
+        
+        # Offer manual eza installation on Linux
+        if [[ "$OSTYPE" == "linux-gnu"* ]] && ! command -v eza &> /dev/null; then
+            echo ""
+            if ask_yes_no "Install eza manually (Linux)?"; then
+                install_eza_linux
+            fi
+        fi
         return 0
     fi
     
@@ -324,6 +332,32 @@ install_optional_tools() {
     fi
     
     return 0
+}
+
+install_eza_linux() {
+    print_info "Installing eza for Linux..."
+    
+    if $DRY_RUN; then
+        print_dryrun "Would download eza from GitHub releases"
+        print_dryrun "Would install eza to /usr/local/bin/eza"
+        return 0
+    fi
+    
+    local temp_dir=$(mktemp -d)
+    cd "$temp_dir" || return 1
+    
+    if wget -c https://github.com/eza-community/eza/releases/latest/download/eza_x86_64-unknown-linux-gnu.tar.gz -O - | tar xz; then
+        if sudo chmod +x eza && sudo chown root:root eza && sudo mv eza /usr/local/bin/eza; then
+            print_success "eza installed successfully"
+        else
+            print_error "Failed to install eza (permission issue)"
+        fi
+    else
+        print_error "Failed to download eza"
+    fi
+    
+    cd - > /dev/null || return 1
+    rm -rf "$temp_dir"
 }
 
 show_post_install() {

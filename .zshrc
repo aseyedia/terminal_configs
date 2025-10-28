@@ -127,6 +127,33 @@ alias vi='nvim'
 alias zshconfig="nvim ~/.zshrc"
 alias zshreload="source ~/.zshrc"
 
+# Eza (better ls) integration
+if command -v eza &>/dev/null; then
+    # Basic ls replacement
+    alias ls='eza --icons --group-directories-first'
+    alias ll='eza --icons --group-directories-first -lh --git'
+    alias la='eza --icons --group-directories-first -lha --git'
+    alias l='eza --icons --group-directories-first -lh --git'
+    alias lt='eza --icons --group-directories-first -lh --git --sort=modified'
+    
+    # Tree views
+    alias tree='eza --icons --tree'
+    alias tree2='eza --icons --tree --level=2'
+    alias tree3='eza --icons --tree --level=3'
+    
+    # Detailed views
+    alias lsa='eza --icons --group-directories-first -lha --git --git-repos --total-size'
+    alias lsf='eza --icons --group-directories-first -lh --git --only-files'
+    alias lsd='eza --icons --group-directories-first -lh --git --only-dirs'
+else
+    # Fallback to standard ls
+    alias ls='ls -G'
+    alias ll='ls -alFh'
+    alias la='ls -A'
+    alias l='ls -CF'
+    alias lt='ls -alFht'
+fi
+
 # Bat (better cat) integration
 if command -v bat &>/dev/null; then
     alias cat='bat'
