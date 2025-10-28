@@ -140,10 +140,10 @@ alias zshreload="source ~/.zshrc"
 if command -v eza &>/dev/null; then
     # Basic ls replacement (no icons to avoid ? characters on systems without Nerd Fonts)
     alias ls='eza --group-directories-first'
-    alias ll='eza --group-directories-first -lh --git'
-    alias la='eza --group-directories-first -lha --git'
-    alias l='eza --group-directories-first -lh --git'
-    alias lt='eza --group-directories-first -lh --git --sort=modified'
+    alias ll='eza --group-directories-first -lh --git --group'
+    alias la='eza --group-directories-first -lha --git --group'
+    alias l='eza --group-directories-first -lh --git --group'
+    alias lt='eza --group-directories-first -lh --git --group --sort=modified'
     
     # Tree views
     alias tree='eza --tree'
@@ -151,9 +151,9 @@ if command -v eza &>/dev/null; then
     alias tree3='eza --tree --level=3'
     
     # Detailed views
-    alias lsa='eza --group-directories-first -lha --git --git-repos --total-size'
-    alias lsf='eza --group-directories-first -lh --git --only-files'
-    alias lsd='eza --group-directories-first -lh --git --only-dirs'
+    alias lsa='eza --group-directories-first -lha --git --git-repos --total-size --group'
+    alias lsf='eza --group-directories-first -lh --git --only-files --group'
+    alias lsd='eza --group-directories-first -lh --git --only-dirs --group'
 else
     # Fallback to standard ls
     alias ls='ls -G'
