@@ -3,6 +3,15 @@
 # ============================================================================
 export PATH=$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH
 
+# Add Neovim to PATH if installed manually
+if [[ -d /opt/nvim-linux-x86_64/bin ]]; then
+    export PATH="$PATH:/opt/nvim-linux-x86_64/bin"
+elif [[ -d /opt/nvim-macos-arm64/bin ]]; then
+    export PATH="$PATH:/opt/nvim-macos-arm64/bin"
+elif [[ -d /opt/nvim-macos-x86_64/bin ]]; then
+    export PATH="$PATH:/opt/nvim-macos-x86_64/bin"
+fi
+
 # ============================================================================
 # Oh My Zsh Configuration
 # ============================================================================
@@ -129,22 +138,22 @@ alias zshreload="source ~/.zshrc"
 
 # Eza (better ls) integration
 if command -v eza &>/dev/null; then
-    # Basic ls replacement
-    alias ls='eza --icons --group-directories-first'
-    alias ll='eza --icons --group-directories-first -lh --git'
-    alias la='eza --icons --group-directories-first -lha --git'
-    alias l='eza --icons --group-directories-first -lh --git'
-    alias lt='eza --icons --group-directories-first -lh --git --sort=modified'
+    # Basic ls replacement (no icons to avoid ? characters on systems without Nerd Fonts)
+    alias ls='eza --group-directories-first'
+    alias ll='eza --group-directories-first -lh --git'
+    alias la='eza --group-directories-first -lha --git'
+    alias l='eza --group-directories-first -lh --git'
+    alias lt='eza --group-directories-first -lh --git --sort=modified'
     
     # Tree views
-    alias tree='eza --icons --tree'
-    alias tree2='eza --icons --tree --level=2'
-    alias tree3='eza --icons --tree --level=3'
+    alias tree='eza --tree'
+    alias tree2='eza --tree --level=2'
+    alias tree3='eza --tree --level=3'
     
     # Detailed views
-    alias lsa='eza --icons --group-directories-first -lha --git --git-repos --total-size'
-    alias lsf='eza --icons --group-directories-first -lh --git --only-files'
-    alias lsd='eza --icons --group-directories-first -lh --git --only-dirs'
+    alias lsa='eza --group-directories-first -lha --git --git-repos --total-size'
+    alias lsf='eza --group-directories-first -lh --git --only-files'
+    alias lsd='eza --group-directories-first -lh --git --only-dirs'
 else
     # Fallback to standard ls
     alias ls='ls -G'

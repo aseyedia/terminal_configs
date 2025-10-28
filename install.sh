@@ -404,20 +404,9 @@ install_neovim_macos() {
         sudo rm -rf "/opt/$nvim_dir"
         sudo mv "$nvim_dir" /opt/
         
-        # Add to PATH in shell configs if not already there
-        local nvim_path="/opt/$nvim_dir/bin"
-        
-        if [[ -f "$HOME/.zshrc" ]] && ! grep -q "$nvim_path" "$HOME/.zshrc" 2>/dev/null; then
-            echo "export PATH=\"\$PATH:$nvim_path\"" >> "$HOME/.zshrc"
-        fi
-        
-        if [[ -f "$HOME/.bashrc" ]] && ! grep -q "$nvim_path" "$HOME/.bashrc" 2>/dev/null; then
-            echo "export PATH=\"\$PATH:$nvim_path\"" >> "$HOME/.bashrc"
-        fi
-        
         print_success "Neovim installed to /opt/$nvim_dir"
-        print_info "Added to PATH in shell configs. Restart your shell or run:"
-        print_info "  export PATH=\"\$PATH:$nvim_path\""
+        print_info "PATH is automatically configured in shell configs"
+        print_info "Restart your shell or run: export PATH=\"\$PATH:/opt/$nvim_dir/bin\""
     else
         print_error "Failed to download or extract Neovim"
         cd - > /dev/null || return 1
@@ -438,20 +427,9 @@ install_neovim_linux() {
     if curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim-linux-x86_64.tar.gz; then
         sudo rm -rf /opt/nvim-linux-x86_64
         if sudo tar -C /opt -xzf nvim-linux-x86_64.tar.gz; then
-            # Add to PATH in shell configs if not already there
-            local nvim_path="/opt/nvim-linux-x86_64/bin"
-            
-            if [[ -f "$HOME/.zshrc" ]] && ! grep -q "$nvim_path" "$HOME/.zshrc" 2>/dev/null; then
-                echo "export PATH=\"\$PATH:$nvim_path\"" >> "$HOME/.zshrc"
-            fi
-            
-            if [[ -f "$HOME/.bashrc" ]] && ! grep -q "$nvim_path" "$HOME/.bashrc" 2>/dev/null; then
-                echo "export PATH=\"\$PATH:$nvim_path\"" >> "$HOME/.bashrc"
-            fi
-            
             print_success "Neovim installed to /opt/nvim-linux-x86_64"
-            print_info "Added to PATH in shell configs. Restart your shell or run:"
-            print_info "  export PATH=\"\$PATH:$nvim_path\""
+            print_info "PATH is automatically configured in shell configs"
+            print_info "Restart your shell or run: export PATH=\"\$PATH:/opt/nvim-linux-x86_64/bin\""
         else
             print_error "Failed to extract Neovim"
             cd - > /dev/null || return 1
