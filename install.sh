@@ -295,7 +295,16 @@ install_optional_tools() {
     echo "  • ripgrep  - Fast text search"
     echo "  • bat      - Better cat with syntax highlighting"
     echo "  • eza      - Modern ls replacement"
+    echo "  • neovim   - Modern vim editor"
     echo ""
+    
+    # Check if neovim needs installation
+    if ! command -v nvim &> /dev/null; then
+        echo ""
+        if ask_yes_no "Neovim not found. Would you like to install it?"; then
+            install_neovim
+        fi
+    fi
     
     if ! command -v brew &> /dev/null; then
         print_warning "Homebrew not found. Install from: https://brew.sh"
@@ -313,9 +322,16 @@ install_optional_tools() {
     if ask_yes_no "Install recommended tools via Homebrew?"; then
         local tools=("fd" "zoxide" "ripgrep" "bat" "eza")
         
+        # Add neovim to the list if not installed
+        if ! command -v nvim &> /dev/null; then
+            tools+=("neovim")
+        fi
+        
         for tool in "${tools[@]}"; do
-            if command -v "$tool" &> /dev/null; then
-                print_success "$tool is already installed"
+            if command -v "$tool" &> /dev/null || [[ "$tool" == "neovim" && $(command -v nvim &> /dev/null) ]]; then
+                local display_name="$tool"
+                [[ "$tool" == "neovim" ]] && display_name="nvim"
+                print_success "$display_name is already installed"
             else
                 if $DRY_RUN; then
                     print_dryrun "Would install $tool via Homebrew"
@@ -332,6 +348,125 @@ install_optional_tools() {
     fi
     
     return 0
+}
+
+install_neovim() {
+    print_section "Installing Neovim"
+    
+    if $DRY_RUN; then
+        print_dryrun "Would install Neovim"
+        return 0
+    fi
+    
+    if command -v brew &> /dev/null; then
+        print_info "Installing via Homebrew..."
+        if brew install neovim > /dev/null 2>&1; then
+            print_success "Neovim installed via Homebrew"
+            return 0
+        else
+            print_error "Failed to install via Homebrew"
+        fi
+    fi
+    
+    # Detect OS and install manually
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        install_neovim_macos
+    elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
+        install_neovim_linux
+    else
+        print_error "Unsupported OS for automatic Neovim installation"
+        print_info "Please install manually from: https://github.com/neovim/neovim/releases"
+        return 1
+    fi
+}
+
+install_neovim_macos() {
+    print_info "Installing Neovim for macOS..."
+    
+    local temp_dir=$(mktemp -d)
+    cd "$temp_dir" || return 1
+    
+    # Detect architecture
+    local arch=$(uname -m)
+    local nvim_url
+    local nvim_dir
+    
+    if [[ "$arch" == "arm64" ]]; then
+        nvim_url="https://github.com/neovim/neovim/releases/download/nightly/nvim-macos-arm64.tar.gz"
+        nvim_dir="nvim-macos-arm64"
+    else
+        nvim_url="https://github.com/neovim/neovim/releases/download/nightly/nvim-macos-x86_64.tar.gz"
+        nvim_dir="nvim-macos-x86_64"
+    fi
+    
+    if curl -LO "$nvim_url" && tar xzf "$nvim_dir.tar.gz"; then
+        sudo mkdir -p /opt
+        sudo rm -rf "/opt/$nvim_dir"
+        sudo mv "$nvim_dir" /opt/
+        
+        # Add to PATH in shell configs if not already there
+        local nvim_path="/opt/$nvim_dir/bin"
+        
+        if [[ -f "$HOME/.zshrc" ]] && ! grep -q "$nvim_path" "$HOME/.zshrc" 2>/dev/null; then
+            echo "export PATH=\"\$PATH:$nvim_path\"" >> "$HOME/.zshrc"
+        fi
+        
+        if [[ -f "$HOME/.bashrc" ]] && ! grep -q "$nvim_path" "$HOME/.bashrc" 2>/dev/null; then
+            echo "export PATH=\"\$PATH:$nvim_path\"" >> "$HOME/.bashrc"
+        fi
+        
+        print_success "Neovim installed to /opt/$nvim_dir"
+        print_info "Added to PATH in shell configs. Restart your shell or run:"
+        print_info "  export PATH=\"\$PATH:$nvim_path\""
+    else
+        print_error "Failed to download or extract Neovim"
+        cd - > /dev/null || return 1
+        rm -rf "$temp_dir"
+        return 1
+    fi
+    
+    cd - > /dev/null || return 1
+    rm -rf "$temp_dir"
+}
+
+install_neovim_linux() {
+    print_info "Installing Neovim for Linux..."
+    
+    local temp_dir=$(mktemp -d)
+    cd "$temp_dir" || return 1
+    
+    if curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim-linux-x86_64.tar.gz; then
+        sudo rm -rf /opt/nvim-linux-x86_64
+        if sudo tar -C /opt -xzf nvim-linux-x86_64.tar.gz; then
+            # Add to PATH in shell configs if not already there
+            local nvim_path="/opt/nvim-linux-x86_64/bin"
+            
+            if [[ -f "$HOME/.zshrc" ]] && ! grep -q "$nvim_path" "$HOME/.zshrc" 2>/dev/null; then
+                echo "export PATH=\"\$PATH:$nvim_path\"" >> "$HOME/.zshrc"
+            fi
+            
+            if [[ -f "$HOME/.bashrc" ]] && ! grep -q "$nvim_path" "$HOME/.bashrc" 2>/dev/null; then
+                echo "export PATH=\"\$PATH:$nvim_path\"" >> "$HOME/.bashrc"
+            fi
+            
+            print_success "Neovim installed to /opt/nvim-linux-x86_64"
+            print_info "Added to PATH in shell configs. Restart your shell or run:"
+            print_info "  export PATH=\"\$PATH:$nvim_path\""
+        else
+            print_error "Failed to extract Neovim"
+            cd - > /dev/null || return 1
+            rm -rf "$temp_dir"
+            return 1
+        fi
+    else
+        print_error "Failed to download Neovim"
+        cd - > /dev/null || return 1
+        rm -rf "$temp_dir"
+        return 1
+    fi
+    
+    cd - > /dev/null || return 1
+    rm -rf "$temp_dir"
 }
 
 install_eza_linux() {
@@ -358,6 +493,58 @@ install_eza_linux() {
     
     cd - > /dev/null || return 1
     rm -rf "$temp_dir"
+}
+
+install_nvim_kickstart() {
+    print_section "Neovim Kickstart Configuration"
+    
+    if ! command -v nvim &> /dev/null; then
+        print_warning "Neovim is not installed. Skipping kickstart configuration."
+        return 1
+    fi
+    
+    local nvim_config_dir="${XDG_CONFIG_HOME:-$HOME/.config}/nvim"
+    
+    if [[ -d "$nvim_config_dir" ]]; then
+        print_warning "Neovim configuration already exists at $nvim_config_dir"
+        
+        if ask_yes_no "Install kickstart.nvim configuration?"; then
+            if ask_yes_no "Backup existing configuration?" "y"; then
+                local backup_path="$nvim_config_dir.backup.$(date +%Y%m%d_%H%M%S)"
+                if $DRY_RUN; then
+                    print_dryrun "Would backup $nvim_config_dir to $backup_path"
+                else
+                    mv "$nvim_config_dir" "$backup_path"
+                    print_success "Backed up to $backup_path"
+                fi
+            else
+                if $DRY_RUN; then
+                    print_dryrun "Would remove $nvim_config_dir"
+                else
+                    rm -rf "$nvim_config_dir"
+                fi
+            fi
+        else
+            print_info "Skipped kickstart.nvim installation"
+            return 1
+        fi
+    fi
+    
+    if ask_yes_no "Install kickstart.nvim configuration?" "y"; then
+        if $DRY_RUN; then
+            print_dryrun "Would clone kickstart.nvim to $nvim_config_dir"
+        else
+            if git clone https://github.com/aseyedia/kickstart.nvim.git "$nvim_config_dir"; then
+                print_success "Kickstart.nvim installed successfully"
+                print_info "Run 'nvim' to complete the setup"
+            else
+                print_error "Failed to clone kickstart.nvim"
+                return 1
+            fi
+        fi
+    fi
+    
+    return 0
 }
 
 show_post_install() {
@@ -529,6 +716,8 @@ main() {
         install_tmux_config
         echo ""
         install_optional_tools
+        echo ""
+        install_nvim_kickstart
     fi
     
     # Show completion message
