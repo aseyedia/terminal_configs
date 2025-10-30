@@ -6,6 +6,26 @@
 [[ $- != *i* ]] && return
 
 # ============================================================================
+# Startup Time Measurement
+# ============================================================================
+# Set BASH_STARTUP_TIME=true to display shell startup time
+# Set BASH_PROFILE=true to show detailed profiling
+if [[ "$BASH_STARTUP_TIME" == "true" ]] || [[ "$BASH_PROFILE" == "true" ]]; then
+    startup_start=$(date +%s%N)
+fi
+
+# Profiling function
+profile_step() {
+    if [[ "$BASH_PROFILE" == "true" ]]; then
+        local step_end=$(date +%s%N)
+        local step_time=$(awk "BEGIN {printf \"%.3f\", (${step_end} - ${profile_last:-$startup_start}) / 1000000000}")
+        local total_time=$(awk "BEGIN {printf \"%.3f\", (${step_end} - ${startup_start}) / 1000000000}")
+        printf "[%s] %s (total: %s)\n" "$step_time" "$1" "$total_time"
+        profile_last=$step_end
+    fi
+}
+
+# ============================================================================
 # PATH Configuration
 # ============================================================================
 export PATH="$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH"
@@ -19,6 +39,8 @@ elif [[ -d /opt/nvim-macos-x86_64/bin ]]; then
     export PATH="$PATH:/opt/nvim-macos-x86_64/bin"
 fi
 
+profile_step "PATH configuration"
+
 # ============================================================================
 # History Configuration
 # ============================================================================
@@ -27,6 +49,8 @@ HISTFILESIZE=20000
 HISTCONTROL=ignoreboth:erasedups  # Ignore duplicates and commands starting with space
 shopt -s histappend               # Append to history, don't overwrite
 shopt -s cmdhist                  # Save multi-line commands as one entry
+
+profile_step "History configured"
 
 # ============================================================================
 # Shell Options
@@ -37,6 +61,8 @@ shopt -s nocaseglob               # Case-insensitive globbing
 shopt -s cdspell                  # Autocorrect typos in path names when using cd
 shopt -s dirspell 2>/dev/null     # Autocorrect directory names
 
+profile_step "Shell options set"
+
 # ============================================================================
 # Environment Variables
 # ============================================================================
@@ -45,6 +71,8 @@ export EDITOR='nvim'
 export VISUAL='nvim'
 export CLICOLOR=1
 export LSCOLORS=ExFxBxDxCxegedabagacad
+
+profile_step "Environment variables"
 
 # ============================================================================
 # Colors
@@ -84,6 +112,8 @@ parse_git_branch() {
 # ============================================================================
 # Format: user@host:directory (git-branch) $
 export PS1="${BGreen}\u@\h${Color_Off}:${BBlue}\w${Color_Off}${BPurple}\$(parse_git_branch)${Color_Off}\$ "
+
+profile_step "Prompt configured"
 
 # ============================================================================
 # FZF Configuration
@@ -133,6 +163,8 @@ if command -v bat &>/dev/null; then
     export FZF_CTRL_T_OPTS="--preview 'bat --color=always --style=numbers --line-range=:500 {}'"
 fi
 
+profile_step "FZF configured"
+
 # ============================================================================
 # Zoxide (better cd)
 # ============================================================================
@@ -142,24 +174,7 @@ if command -v zoxide &>/dev/null; then
     alias cd='z'
 fi
 
-# ============================================================================
-# NVM (Node Version Manager)
-# ============================================================================
-export NVM_DIR="$HOME/.nvm"
-# Lazy load NVM to improve shell startup time
-if [ -s "$NVM_DIR/nvm.sh" ]; then
-    # Create placeholder functions
-    declare -a NODE_GLOBALS=(node nvm npm npx yarn)
-    
-    load_nvm() {
-        [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-        [ -s "$NVM_DIR/bash_completion" ] && . "$NVM_DIR/bash_completion"
-    }
-    
-    for cmd in "${NODE_GLOBALS[@]}"; do
-        eval "function ${cmd}(){ unset -f ${NODE_GLOBALS[*]}; load_nvm; ${cmd} \"\$@\"; }"
-    done
-fi
+profile_step "Zoxide initialized"
 
 # ============================================================================
 # Homebrew
@@ -167,6 +182,8 @@ fi
 if [[ -f /opt/homebrew/bin/brew ]]; then
     eval "$(/opt/homebrew/bin/brew shellenv)"
 fi
+
+profile_step "Homebrew initialized"
 
 # ============================================================================
 # Aliases
@@ -247,7 +264,8 @@ if command -v bat &> /dev/null; then
     alias cat='bat'
     alias bathelp='bat --plain --language=help'
     
-    # Help function with bat
+    # Help function with bat (unalias first in case it's already defined)
+    unalias help 2>/dev/null
     help() {
         "$@" --help 2>&1 | bathelp
     }
@@ -261,6 +279,8 @@ alias t='tmux'
 alias ta='tmux attach'
 alias tls='tmux ls'
 alias tn='tmux new -s'
+
+profile_step "Aliases configured"
 
 # ============================================================================
 # Functions
@@ -321,6 +341,8 @@ cheat() {
     curl -s "cht.sh/$1"
 }
 
+profile_step "Functions defined"
+
 # ============================================================================
 # Bash Completion
 # ============================================================================
@@ -330,12 +352,25 @@ elif [[ -f /etc/bash_completion ]]; then
     source /etc/bash_completion
 fi
 
+profile_step "Bash completion loaded"
+
 # ============================================================================
 # Local Configuration (not tracked by git)
 # ============================================================================
 # Add machine-specific configuration to ~/.bashrc.local
 if [[ -f ~/.bashrc.local ]]; then
     source ~/.bashrc.local
+fi
+
+profile_step "Local config loaded"
+
+# ============================================================================
+# Startup Time Display
+# ============================================================================
+if [[ "$BASH_STARTUP_TIME" == "true" ]] || [[ "$BASH_PROFILE" == "true" ]]; then
+    startup_end=$(date +%s%N)
+    startup_time=$(awk "BEGIN {printf \"%.3f\", (${startup_end} - ${startup_start}) / 1000000000}")
+    echo "⚡ bash startup: ${startup_time}s"
 fi
 
 # ============================================================================
