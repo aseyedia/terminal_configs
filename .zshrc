@@ -1,4 +1,28 @@
 # ============================================================================
+# Startup Time Measurement
+# ============================================================================
+# Set ZSH_STARTUP_TIME=true to display shell startup time
+# Set ZSH_PROFILE=true to show detailed profiling
+# Start timer
+ZSH_STARTUP_TIME=true
+ZSH_PROFILE=true
+if [[ "$ZSH_STARTUP_TIME" == "true" ]] || [[ "$ZSH_PROFILE" == "true" ]]; then
+    zmodload zsh/datetime
+    startup_start=$EPOCHREALTIME
+fi
+
+# Profiling function
+profile_step() {
+    if [[ "$ZSH_PROFILE" == "true" ]]; then
+        local step_end=$EPOCHREALTIME
+        local step_time=$(printf "%.3f" $(($step_end - ${profile_last:-$startup_start})))
+        local total_time=$(printf "%.3f" $(($step_end - $startup_start)))
+        printf "[%s] %s (total: %s)\n" "$step_time" "$1" "$total_time"
+        profile_last=$step_end
+    fi
+}
+
+# ============================================================================
 # PATH Configuration
 # ============================================================================
 export PATH=$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH
@@ -12,21 +36,25 @@ elif [[ -d /opt/nvim-macos-x86_64/bin ]]; then
     export PATH="$PATH:/opt/nvim-macos-x86_64/bin"
 fi
 
+profile_step "PATH configuration"
+
 # ============================================================================
 # Oh My Zsh Configuration
 # ============================================================================
 export ZSH="$HOME/.oh-my-zsh"
-ZSH_THEME=""  # Using Pure theme via zplug instead
+ZSH_THEME=""  # Using Pure theme via zplug
 
 # Oh My Zsh Settings
-DISABLE_UNTRACKED_FILES_DIRTY="true"  # Faster git status for large repos
+DISABLE_UNTRACKED_FILES_DIRTY="true"
 HIST_STAMPS="yyyy-mm-dd"
 
-# Minimal plugins for OMZ (rest handled by zplug)
+# Minimal plugins for OMZ
 plugins=(git)
 
-# Source Oh My Zsh
+zstyle ':omz:plugins:nvm' lazy yes
 source $ZSH/oh-my-zsh.sh
+
+profile_step "Oh My Zsh loaded"
 
 # ============================================================================
 # Environment Variables
@@ -34,6 +62,8 @@ source $ZSH/oh-my-zsh.sh
 export LANG=en_US.UTF-8
 export EDITOR='nvim'
 export VISUAL='nvim'
+
+profile_step "Environment variables"
 
 # ============================================================================
 # Zplug Plugin Manager
@@ -48,25 +78,27 @@ fi
 
 source $ZPLUG_HOME/init.zsh
 
+profile_step "Zplug initialized"
+
 # ============================================================================
 # Zplug Plugins
 # ============================================================================
-# Theme
 zplug "mafredri/zsh-async", from:github
 zplug "sindresorhus/pure", use:pure.zsh, from:github, as:theme
 
-# OMZ plugins via zplug
-zplug "plugins/nvm", from:oh-my-zsh
+ZOXIDE_CMD_OVERRIDE="cd"
+# zplug "plugins/nvm", from:oh-my-zsh
 zplug "plugins/zoxide", from:oh-my-zsh
 zplug "plugins/tmux", from:oh-my-zsh
-zplug "plugins/common-aliases", from:oh-my-zsh
-zplug "plugins/aliases", from:oh-my-zsh
-zplug "plugins/alias-finder", from:oh-my-zsh
 
-# Enhanced shell features
-zplug "zsh-users/zsh-completions", depth:1
+# zplug "zsh-users/zsh-completions", depth:1
 zplug "zsh-users/zsh-autosuggestions", as:plugin, defer:2
 zplug "zsh-users/zsh-syntax-highlighting", defer:2
+
+# Load all plugins
+zplug load
+
+profile_step "Zplug plugins loaded"
 
 # Install plugins if there are plugins that have not been installed
 if ! zplug check --verbose; then
@@ -76,13 +108,11 @@ if ! zplug check --verbose; then
     fi
 fi
 
-# Load all plugins
-zplug load
+profile_step "Zplug check complete"
 
 # ============================================================================
 # FZF Configuration
 # ============================================================================
-
 # Auto-install FZF if not present
 if ! command -v fzf &>/dev/null && [[ ! -d ~/.fzf ]]; then
     echo "FZF not found. Installing..."
@@ -90,43 +120,26 @@ if ! command -v fzf &>/dev/null && [[ ! -d ~/.fzf ]]; then
     ~/.fzf/install --key-bindings --completion --no-update-rc
 fi
 
-# Initialize FZF if installed via Homebrew
-if [[ -f /opt/homebrew/opt/fzf/shell/completion.zsh ]]; then
-    source /opt/homebrew/opt/fzf/shell/completion.zsh
-fi
-
-if [[ -f /opt/homebrew/opt/fzf/shell/key-bindings.zsh ]]; then
-    source /opt/homebrew/opt/fzf/shell/key-bindings.zsh
-fi
-
-# Initialize FZF if installed via git
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 
-# FZF default options (fixes the height error)
-export FZF_DEFAULT_OPTS="
-  --height=40%
-  --border
-  --inline-info
-  --color=fg:#c0caf5,bg:#1a1b26,hl:#bb9af7
-  --color=fg+:#c0caf5,bg+:#1a1b26,hl+:#7dcfff
-  --color=info:#7aa2f7,prompt:#7dcfff,pointer:#7dcfff
-  --color=marker:#9ece6a,spinner:#9ece6a,header:#9ece6a
-"
+profile_step "FZF configured"
 
-# FZF file search (respects .gitignore)
-export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'
-export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
-export FZF_ALT_C_COMMAND='fd --type d --hidden --follow --exclude .git'
+# FZF options
+export FZF_DEFAULT_OPTS="--height=40% --border --inline-info"
 
-# FZF preview with bat
+# FZF commands with fd/ripgrep if available
+if command -v fd &>/dev/null; then
+    export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'
+    export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
+    export FZF_ALT_C_COMMAND='fd --type d --hidden --follow --exclude .git'
+fi
+
+# FZF preview with bat if available
 if command -v bat &>/dev/null; then
     export FZF_CTRL_T_OPTS="--preview 'bat --color=always --style=numbers --line-range=:500 {}'"
 fi
 
-# ============================================================================
-# Zoxide Configuration
-# ============================================================================
-ZOXIDE_CMD_OVERRIDE="cd"
+profile_step "FZF options set"
 
 # ============================================================================
 # Custom Aliases
@@ -136,49 +149,36 @@ alias vi='nvim'
 alias zshconfig="nvim ~/.zshrc"
 alias zshreload="source ~/.zshrc"
 
-# Eza (better ls) integration
+# Eza aliases (if installed)
 if command -v eza &>/dev/null; then
-    # Basic ls replacement (no icons to avoid ? characters on systems without Nerd Fonts)
     alias ls='eza --group-directories-first'
     alias ll='eza --group-directories-first -lh --git --group'
     alias la='eza --group-directories-first -lha --git --group'
     alias l='eza --group-directories-first -lh --git --group'
     alias lt='eza --group-directories-first -lh --git --group --sort=modified'
-    
-    # Tree views
     alias tree='eza --tree'
     alias tree2='eza --tree --level=2'
     alias tree3='eza --tree --level=3'
-    
-    # Detailed views
-    alias lsa='eza --group-directories-first -lha --git --git-repos --total-size --group'
-    alias lsf='eza --group-directories-first -lh --git --only-files --group'
-    alias lsd='eza --group-directories-first -lh --git --only-dirs --group'
-else
-    # Fallback to standard ls
-    alias ls='ls -G'
-    alias ll='ls -alFh'
-    alias la='ls -A'
-    alias l='ls -CF'
-    alias lt='ls -alFht'
 fi
 
-# Bat (better cat) integration
+# Bat integration (if installed)
 if command -v bat &>/dev/null; then
     alias cat='bat'
-    alias bathelp='bat --plain --language=help'
-    
-    # Help function with bat
-    help() {
-        "$@" --help 2>&1 | bathelp
-    }
-    
-    # Man pages with bat
     export MANPAGER="sh -c 'col -bx | bat -l man -p'"
 fi
 
+profile_step "Aliases configured"
+
 # ============================================================================
-# Performance Optimizations
+# Startup Time Display
 # ============================================================================
-# Skip global compinit as OMZ already handles it
-skip_global_compinit=1
+if [[ "$ZSH_STARTUP_TIME" == "true" ]] || [[ "$ZSH_PROFILE" == "true" ]]; then
+    startup_end=$EPOCHREALTIME
+    startup_time=$(printf "%.3f" $(($startup_end - $startup_start)))
+    echo "zsh startup: ${startup_time}s"
+fi
+
+# Add machine-specific configuration to ~/.zshrc.local
+if [[ -f ~/.zshrc.local ]]; then
+    source ~/.zshrc.local
+fi
