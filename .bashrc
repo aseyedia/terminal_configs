@@ -16,7 +16,7 @@ fi
 
 # Profiling function
 profile_step() {
-    if [[ "$BASH_PROFILE" == "true" ]]; then
+    if [[ "$BASH_PROFILE" == "true" ]] && [[ -n "$startup_start" ]]; then
         local step_end=$(date +%s%N)
         local step_time=$(awk "BEGIN {printf \"%.3f\", (${step_end} - ${profile_last:-$startup_start}) / 1000000000}")
         local total_time=$(awk "BEGIN {printf \"%.3f\", (${step_end} - ${startup_start}) / 1000000000}")
@@ -28,7 +28,20 @@ profile_step() {
 # ============================================================================
 # PATH Configuration
 # ============================================================================
-export PATH="$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH"
+# Set initial PATH with system paths first
+export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/bin:$HOME/.local/bin:$PATH"
+
+# Homebrew initialization (this will prepend Homebrew paths)
+if [[ -f /opt/homebrew/bin/brew ]]; then
+    # Apple Silicon Mac
+    eval "$(/opt/homebrew/bin/brew shellenv)"
+elif [[ -f /usr/local/bin/brew ]]; then
+    # Intel Mac
+    eval "$(/usr/local/bin/brew shellenv)"
+elif [[ -f /home/linuxbrew/.linuxbrew/bin/brew ]]; then
+    # Linux
+    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+fi
 
 # Add Neovim to PATH if installed manually
 if [[ -d /opt/nvim-linux-x86_64/bin ]]; then
@@ -368,9 +381,11 @@ profile_step "Local config loaded"
 # Startup Time Display
 # ============================================================================
 if [[ "$BASH_STARTUP_TIME" == "true" ]] || [[ "$BASH_PROFILE" == "true" ]]; then
-    startup_end=$(date +%s%N)
-    startup_time=$(awk "BEGIN {printf \"%.3f\", (${startup_end} - ${startup_start}) / 1000000000}")
-    echo "⚡ bash startup: ${startup_time}s"
+    if [[ -n "$startup_start" ]]; then
+        startup_end=$(date +%s%N)
+        startup_time=$(awk "BEGIN {printf \"%.3f\", (${startup_end} - ${startup_start}) / 1000000000}")
+        echo "⚡ bash startup: ${startup_time}s"
+    fi
 fi
 
 # ============================================================================
