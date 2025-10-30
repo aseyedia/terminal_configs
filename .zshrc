@@ -5,6 +5,12 @@
 # Expected startup time: ~0.3-0.4s (vs 0.8s with OMZ)
 
 # ============================================================================
+# Local Configuration
+# ============================================================================
+# Load local config if it exists (not tracked by git)
+[ -f ~/.zshrc.local ] && source ~/.zshrc.local
+
+# ============================================================================
 # Startup Time Measurement
 # ============================================================================
 # Set ZSH_STARTUP_TIME=true to display shell startup time
@@ -16,7 +22,7 @@ fi
 
 # Profiling function
 profile_step() {
-    if [[ "$ZSH_PROFILE" == "true" ]]; then
+    if [[ "$ZSH_PROFILE" == "true" ]] && [[ -n "$startup_start" ]]; then
         local step_end=$EPOCHREALTIME
         local step_time=$(printf "%.3f" $(($step_end - ${profile_last:-$startup_start})))
         local total_time=$(printf "%.3f" $(($step_end - $startup_start)))
@@ -28,7 +34,20 @@ profile_step() {
 # ============================================================================
 # PATH Configuration
 # ============================================================================
-export PATH=$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH
+# Set initial PATH with system paths first
+export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/bin:$HOME/.local/bin:$PATH"
+
+# Homebrew initialization (this will prepend Homebrew paths)
+if [[ -f /opt/homebrew/bin/brew ]]; then
+    # Apple Silicon Mac
+    eval "$(/opt/homebrew/bin/brew shellenv)"
+elif [[ -f /usr/local/bin/brew ]]; then
+    # Intel Mac
+    eval "$(/usr/local/bin/brew shellenv)"
+elif [[ -f /home/linuxbrew/.linuxbrew/bin/brew ]]; then
+    # Linux
+    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+fi
 
 # Add Neovim to PATH if installed manually
 if [[ -d /opt/nvim-linux-x86_64/bin ]]; then
@@ -212,16 +231,12 @@ profile_step "Aliases configured"
 # Pure theme handles this, but you can customize if needed
 
 # ============================================================================
-# Local Configuration
-# ============================================================================
-# Load local config if it exists (not tracked by git)
-[ -f ~/.zshrc.local ] && source ~/.zshrc.local
-
-# ============================================================================
 # Startup Time Display
 # ============================================================================
 if [[ "$ZSH_STARTUP_TIME" == "true" ]] || [[ "$ZSH_PROFILE" == "true" ]]; then
-    startup_end=$EPOCHREALTIME
-    startup_time=$(printf "%.3f" $(($startup_end - $startup_start)))
-    echo "⚡ zsh startup: ${startup_time}s"
+    if [[ -n "$startup_start" ]]; then
+        startup_end=$EPOCHREALTIME
+        startup_time=$(printf "%.3f" $(($startup_end - $startup_start)))
+        echo "⚡ zsh startup: ${startup_time}s"
+    fi
 fi
