@@ -1,11 +1,14 @@
 # ============================================================================
+# Fast ZSH Configuration (No Oh My Zsh)
+# ============================================================================
+# This is a faster version that skips Oh My Zsh entirely
+# Expected startup time: ~0.3-0.4s (vs 0.8s with OMZ)
+
+# ============================================================================
 # Startup Time Measurement
 # ============================================================================
 # Set ZSH_STARTUP_TIME=true to display shell startup time
 # Set ZSH_PROFILE=true to show detailed profiling
-# Start timer
-ZSH_STARTUP_TIME=true
-ZSH_PROFILE=true
 if [[ "$ZSH_STARTUP_TIME" == "true" ]] || [[ "$ZSH_PROFILE" == "true" ]]; then
     zmodload zsh/datetime
     startup_start=$EPOCHREALTIME
@@ -39,22 +42,26 @@ fi
 profile_step "PATH configuration"
 
 # ============================================================================
-# Oh My Zsh Configuration
+# ZSH Options & History
 # ============================================================================
-export ZSH="$HOME/.oh-my-zsh"
-ZSH_THEME=""  # Using Pure theme via zplug
+# History configuration
+HISTFILE=~/.zsh_history
+HISTSIZE=10000                      # Number of commands to remember in current session
+SAVEHIST=10000                      # Number of commands to save to history file
+setopt HIST_IGNORE_ALL_DUPS         # Remove older duplicate entries from history
+setopt HIST_FIND_NO_DUPS            # Don't show duplicates when searching history
+setopt HIST_SAVE_NO_DUPS            # Don't write duplicate entries to history file
+setopt SHARE_HISTORY                # Share history between all sessions
+setopt APPEND_HISTORY               # Append to history file (don't overwrite)
+setopt INC_APPEND_HISTORY           # Write to history file immediately, not on shell exit
 
-# Oh My Zsh Settings
-DISABLE_UNTRACKED_FILES_DIRTY="true"
-HIST_STAMPS="yyyy-mm-dd"
+# Other useful options
+setopt AUTO_CD                      # Type directory name to cd into it (no need for 'cd')
+setopt AUTO_PUSHD                   # Automatically push directories onto the directory stack
+setopt PUSHD_IGNORE_DUPS            # Don't push duplicate directories onto the stack
+setopt INTERACTIVE_COMMENTS         # Allow comments in interactive shell (lines starting with #)
 
-# Minimal plugins for OMZ
-plugins=(git)
-
-zstyle ':omz:plugins:nvm' lazy yes
-source $ZSH/oh-my-zsh.sh
-
-profile_step "Oh My Zsh loaded"
+profile_step "ZSH options set"
 
 # ============================================================================
 # Environment Variables
@@ -63,14 +70,31 @@ export LANG=en_US.UTF-8
 export EDITOR='nvim'
 export VISUAL='nvim'
 
-profile_step "Environment variables"
+# ============================================================================
+# Completion System
+# ============================================================================
+# Initialize completion (faster than OMZ)
+autoload -Uz compinit
+
+# Only regenerate compdump once a day
+if [[ -n ~/.zcompdump(#qN.mh+24) ]]; then
+    compinit
+else
+    compinit -C
+fi
+
+# Completion styling
+zstyle ':completion:*' menu select
+zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}' # Case insensitive
+zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
+
+profile_step "Completion initialized"
 
 # ============================================================================
 # Zplug Plugin Manager
 # ============================================================================
 export ZPLUG_HOME=~/.zplug
 
-# Check if zplug is installed
 if [[ ! -d $ZPLUG_HOME ]]; then
     echo "Installing zplug..."
     git clone https://github.com/zplug/zplug $ZPLUG_HOME
@@ -81,34 +105,37 @@ source $ZPLUG_HOME/init.zsh
 profile_step "Zplug initialized"
 
 # ============================================================================
-# Zplug Plugins
+# Zplug Plugins (Minimal Set)
 # ============================================================================
+# Pure theme
 zplug "mafredri/zsh-async", from:github
 zplug "sindresorhus/pure", use:pure.zsh, from:github, as:theme
 
-ZOXIDE_CMD_OVERRIDE="cd"
-# zplug "plugins/nvm", from:oh-my-zsh
-zplug "plugins/zoxide", from:oh-my-zsh
-zplug "plugins/tmux", from:oh-my-zsh
-
-# zplug "zsh-users/zsh-completions", depth:1
+# Essential plugins only
 zplug "zsh-users/zsh-autosuggestions", as:plugin, defer:2
 zplug "zsh-users/zsh-syntax-highlighting", defer:2
 
-# Load all plugins
+# Load plugins
 zplug load
 
 profile_step "Zplug plugins loaded"
 
-# Install plugins if there are plugins that have not been installed
-if ! zplug check --verbose; then
-    printf "Install? [y/N]: "
-    if read -q; then
-        echo; zplug install
-    fi
+# Install plugins if needed (quiet check)
+if ! zplug check; then
+    zplug install
 fi
 
 profile_step "Zplug check complete"
+
+# ============================================================================
+# Zoxide (Better cd)
+# ============================================================================
+if command -v zoxide &>/dev/null; then
+    eval "$(zoxide init zsh)"
+    alias cd='z'
+fi
+
+profile_step "Zoxide initialized"
 
 # ============================================================================
 # FZF Configuration
@@ -122,12 +149,10 @@ fi
 
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 
-profile_step "FZF configured"
-
 # FZF options
 export FZF_DEFAULT_OPTS="--height=40% --border --inline-info"
 
-# FZF commands with fd/ripgrep if available
+# FZF commands with fd if available
 if command -v fd &>/dev/null; then
     export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'
     export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
@@ -139,7 +164,7 @@ if command -v bat &>/dev/null; then
     export FZF_CTRL_T_OPTS="--preview 'bat --color=always --style=numbers --line-range=:500 {}'"
 fi
 
-profile_step "FZF options set"
+profile_step "FZF configured"
 
 # ============================================================================
 # Custom Aliases
@@ -148,6 +173,18 @@ alias vim='nvim'
 alias vi='nvim'
 alias zshconfig="nvim ~/.zshrc"
 alias zshreload="source ~/.zshrc"
+
+# Git aliases (replacing OMZ git plugin)
+alias g='git'
+alias gs='git status'
+alias ga='git add'
+alias gc='git commit'
+alias gp='git push'
+alias gl='git pull'
+alias gd='git diff'
+alias gco='git checkout'
+alias gb='git branch'
+alias glog='git log --oneline --graph --decorate --all'
 
 # Eza aliases (if installed)
 if command -v eza &>/dev/null; then
@@ -170,15 +207,21 @@ fi
 profile_step "Aliases configured"
 
 # ============================================================================
+# Git Prompt (Replacing OMZ)
+# ============================================================================
+# Pure theme handles this, but you can customize if needed
+
+# ============================================================================
+# Local Configuration
+# ============================================================================
+# Load local config if it exists (not tracked by git)
+[ -f ~/.zshrc.local ] && source ~/.zshrc.local
+
+# ============================================================================
 # Startup Time Display
 # ============================================================================
 if [[ "$ZSH_STARTUP_TIME" == "true" ]] || [[ "$ZSH_PROFILE" == "true" ]]; then
     startup_end=$EPOCHREALTIME
     startup_time=$(printf "%.3f" $(($startup_end - $startup_start)))
-    echo "zsh startup: ${startup_time}s"
-fi
-
-# Add machine-specific configuration to ~/.zshrc.local
-if [[ -f ~/.zshrc.local ]]; then
-    source ~/.zshrc.local
+    echo "⚡ zsh startup: ${startup_time}s"
 fi
