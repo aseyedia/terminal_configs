@@ -58,6 +58,13 @@ elif [[ -d /opt/nvim-macos-x86_64/bin ]]; then
     export PATH="$PATH:/opt/nvim-macos-x86_64/bin"
 fi
 
+# Add Python unversioned symlinks to PATH (python, pip, etc.)
+# Find the latest installed Python version
+LATEST_PYTHON=$(find /opt/homebrew/opt -maxdepth 1 -name 'python@*' 2>/dev/null | sort -V | tail -1)
+if [[ -n "$LATEST_PYTHON" ]] && [[ -d "$LATEST_PYTHON/libexec/bin" ]]; then
+    export PATH="$LATEST_PYTHON/libexec/bin:$PATH"
+fi
+
 profile_step "PATH configuration"
 
 # ============================================================================
