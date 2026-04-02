@@ -1,6 +1,7 @@
 # Terminal Configurations
 
-Optimized shell and terminal configurations for Zsh, Bash, and Tmux.
+Optimized shell and terminal configurations for Bash, Zsh, and Tmux.
+**Optimized for RHEL/Enterprise Linux** - Downloads static binaries of modern CLI tools (no compilation required!).
 
 ## Quick Install
 
@@ -10,45 +11,111 @@ cd terminal_configs
 ./install.sh
 ```
 
-Preview changes first: `./install.sh --dry-run`
-
 ## What's Included
 
-- **`.zshrc`** - Pure prompt, FZF, smart plugins, auto-completion
 - **`.bashrc`** - Git-aware prompt, FZF, lazy-loaded NVM, extensive aliases
+- **`.zshrc`** - Pure prompt, FZF, smart plugins, auto-completion (when zsh available)
 - **`tmux.conf`** - Browser-like tabs, mouse support, custom keybindings
-- **`install.sh`** - Interactive installer with backups and dry-run mode
+- **`install.sh`** - Interactive installer with static binary downloads
 
 ## Installation Options
 
+The installer offers three modes:
+1. **Full installation** - Configs + download tools (static binaries)
+2. **Configs only** - Skip tool downloads (faster)
+3. **Tools only** - Download tools, skip configs
+
+### Downloading Static Binaries
+
+The installer downloads static musl binaries for these modern CLI tools:
+- **fd** - Fast file finder (essential)
+- **zoxide** - Smarter cd command (essential)
+- **ripgrep** - Fast text search (essential)
+- **bat** - Better cat with syntax highlighting (optional)
+- **eza** - Modern ls replacement (optional)
+
+**Installation methods:**
+- **Static binaries** (recommended for RHEL/servers) - Fast, no dependencies
+- **Homebrew** (optional) - Available if you have brew installed
+
+**Why static binaries?**
+- ✅ **No compilation** - Installs in seconds, not minutes
+- ✅ **No Rust/build tools needed** - Just curl and tar
+- ✅ **Portable** - Works across different Linux distributions
+- ✅ **No dependencies** - Statically linked musl binaries
+
+This is ideal for RHEL 9/CentOS/Enterprise Linux where:
+- Homebrew isn't feasible or you prefer not to use it
+- DNF/YUM repos have outdated versions
+- You need modern tools without admin privileges
+- Building from source is too slow or complex
+
+**Note:** If you have Homebrew installed, the installer will offer you the choice between static binaries and brew installation.
+
+### Prerequisites
+
+Minimal dependencies (usually already installed):
+
 ```bash
-./install.sh              # Interactive mode
-./install.sh --dry-run    # Preview changes
-./install.sh --zsh-only   # Install only .zshrc
-./install.sh --bash-only  # Install only .bashrc
-./install.sh --tmux-only  # Install only tmux.conf
-./install.sh --help       # All options
+# For static binaries: just need curl and tar (typically pre-installed)
+# If missing on RHEL/CentOS:
+sudo dnf install curl tar gzip
+
+# For Homebrew method (optional):
+# Install Homebrew from https://brew.sh if you prefer
 ```
 
-## Recommended Tools
+## Tools Overview
 
-```bash
-brew install fd zoxide ripgrep bat eza neovim
-```
+**Auto-installed:**
+- **fzf** - Fuzzy finder (auto-installed by configs)
 
-- **fzf** - Fuzzy finder (auto-installed)
-- **fd** - Fast file finder
-- **zoxide** - Smarter cd
-- **ripgrep** - Fast text search
-- **bat** - Better cat
-- **eza** - Modern ls
+**Downloaded as static binaries (via installer):**
+- **fd** - Fast file finder, respects .gitignore
+- **zoxide** - Smarter cd with frecency algorithm
+- **ripgrep** - Lightning fast grep alternative
+- **bat** - Cat clone with syntax highlighting
+- **eza** - Modern ls with git integration
+
+*Can also be installed via Homebrew if detected*
+
+**Optional (install separately):**
 - **neovim** - Modern vim
+- **tmux** - Terminal multiplexer
 
 ## Features
 
-**FZF** - Auto-install, respects `.gitignore`, custom keybindings  
-**Shell** - Lazy-loaded NVM, smart history, git prompts, auto-correction  
+**Bash/Zsh** - Lazy-loaded NVM, smart history, git prompts, auto-correction
+**FZF** - Auto-install, respects `.gitignore`, custom keybindings, bat previews
 **Tmux** - Ctrl+T (new window), Ctrl+PgUp/PgDn (navigate), Alt+1-9 (jump to window)
+
+## Server-Friendly
+
+This configuration is optimized for enterprise Linux servers:
+- Works great with bash only (no zsh required)
+- Tools install to `~/.local/bin` (no sudo needed)
+- Minimal dependencies, fast startup
+- SELinux compatible
+
+### Quick Server Setup
+
+For RHEL 9/CentOS/Rocky Linux servers:
+
+```bash
+# 1. Clone the repo
+git clone https://github.com/aseyedia/terminal_configs.git ~/terminal_configs
+cd ~/terminal_configs
+
+# 2. Run installer (curl and tar are typically pre-installed)
+./install.sh
+
+# 3. Choose option 1 (full installation) to download fd, zoxide, and ripgrep
+# 4. Restart your shell or: source ~/.bashrc
+```
+
+Tools will be installed to `~/.local/bin` (already in PATH via the .bashrc).
+
+**Installation time:** ~30 seconds (vs 15+ minutes building from source!)
 
 ## Customization
 
