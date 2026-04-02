@@ -85,6 +85,30 @@ This configuration is optimized for enterprise Linux servers:
 - Minimal dependencies, fast startup
 - SELinux compatible
 
+### Quick Server Setup
+
+For RHEL 9/CentOS/Rocky Linux servers without homebrew:
+
+```bash
+# 1. Install build dependencies
+sudo dnf groupinstall 'Development Tools'
+sudo dnf install openssl-devel git
+
+# 2. Install Rust (for building modern tools)
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+source $HOME/.cargo/env
+
+# 3. Clone and run installer
+git clone https://github.com/aseyedia/terminal_configs.git ~/terminal_configs
+cd ~/terminal_configs
+./install.sh
+
+# 4. Choose option 1 (full installation) to build fd, zoxide, and ripgrep from source
+# 5. Restart your shell or: source ~/.bashrc
+```
+
+Tools will be installed to `~/.local/bin` (already in PATH via the .bashrc).
+
 ## Customization
 
 Machine-specific configs: `~/.zshrc.local` or `~/.bashrc.local`  
