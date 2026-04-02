@@ -127,7 +127,7 @@ download_zoxide() {
     echo -e "${BLUE}Downloading zoxide...${NC}"
 
     local arch=$(detect_architecture)
-    local version="v0.9.6"  # Update as needed
+    local version="v0.9.9"  # Update as needed
     local filename="zoxide-${version}-${arch}-unknown-linux-musl.tar.gz"
     local url="https://github.com/ajeetdsouza/zoxide/releases/download/${version}/${filename}"
 

@@ -243,7 +243,6 @@ alias gb='git branch'
 alias glog='git log --oneline --graph --decorate --all'
 
 # Safety
-alias rm='rm -i'
 alias cp='cp -i'
 alias mv='mv -i'
 alias mkdir='mkdir -pv'
