@@ -1,6 +1,7 @@
 # Terminal Configurations
 
-Optimized shell and terminal configurations for Zsh, Bash, and Tmux.
+Optimized shell and terminal configurations for Bash, Zsh, and Tmux.
+**Optimized for RHEL/Enterprise Linux** - Build modern CLI tools from source when package managers are outdated.
 
 ## Quick Install
 
@@ -10,45 +11,79 @@ cd terminal_configs
 ./install.sh
 ```
 
-Preview changes first: `./install.sh --dry-run`
-
 ## What's Included
 
-- **`.zshrc`** - Pure prompt, FZF, smart plugins, auto-completion
 - **`.bashrc`** - Git-aware prompt, FZF, lazy-loaded NVM, extensive aliases
+- **`.zshrc`** - Pure prompt, FZF, smart plugins, auto-completion (when zsh available)
 - **`tmux.conf`** - Browser-like tabs, mouse support, custom keybindings
-- **`install.sh`** - Interactive installer with backups and dry-run mode
+- **`install.sh`** - Interactive installer with tool building from source
 
 ## Installation Options
 
+The installer offers three modes:
+1. **Full installation** - Configs + build tools from source
+2. **Configs only** - Skip tool building (faster)
+3. **Tools only** - Build tools, skip configs
+
+### Building Tools from Source
+
+The installer can build these modern CLI tools from source:
+- **fd** - Fast file finder (essential)
+- **zoxide** - Smarter cd command (essential)
+- **ripgrep** - Fast text search (essential)
+- **bat** - Better cat with syntax highlighting (optional)
+- **eza** - Modern ls replacement (optional)
+
+This is ideal for RHEL 9/CentOS/Enterprise Linux where:
+- Homebrew isn't feasible
+- DNF/YUM repos have outdated versions
+- You need modern tools without admin privileges
+
+### Prerequisites for Building
+
 ```bash
-./install.sh              # Interactive mode
-./install.sh --dry-run    # Preview changes
-./install.sh --zsh-only   # Install only .zshrc
-./install.sh --bash-only  # Install only .bashrc
-./install.sh --tmux-only  # Install only tmux.conf
-./install.sh --help       # All options
+# RHEL/CentOS/Rocky Linux
+sudo dnf groupinstall 'Development Tools'
+sudo dnf install openssl-devel
+
+# Ubuntu/Debian
+sudo apt update && sudo apt install build-essential libssl-dev pkg-config
+
+# Install Rust (required for building tools)
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 
-## Recommended Tools
+The installer will guide you through this and can install Rust automatically.
 
-```bash
-brew install fd zoxide ripgrep bat eza neovim
-```
+## Tools Overview
 
-- **fzf** - Fuzzy finder (auto-installed)
-- **fd** - Fast file finder
-- **zoxide** - Smarter cd
-- **ripgrep** - Fast text search
-- **bat** - Better cat
-- **eza** - Modern ls
+**Auto-installed:**
+- **fzf** - Fuzzy finder (auto-installed by configs)
+
+**Build from source (via installer):**
+- **fd** - Fast file finder, respects .gitignore
+- **zoxide** - Smarter cd with frecency algorithm
+- **ripgrep** - Lightning fast grep alternative
+- **bat** - Cat clone with syntax highlighting
+- **eza** - Modern ls with git integration
+
+**Optional (install separately):**
 - **neovim** - Modern vim
+- **tmux** - Terminal multiplexer
 
 ## Features
 
-**FZF** - Auto-install, respects `.gitignore`, custom keybindings  
-**Shell** - Lazy-loaded NVM, smart history, git prompts, auto-correction  
+**Bash/Zsh** - Lazy-loaded NVM, smart history, git prompts, auto-correction
+**FZF** - Auto-install, respects `.gitignore`, custom keybindings, bat previews
 **Tmux** - Ctrl+T (new window), Ctrl+PgUp/PgDn (navigate), Alt+1-9 (jump to window)
+
+## Server-Friendly
+
+This configuration is optimized for enterprise Linux servers:
+- Works great with bash only (no zsh required)
+- Tools install to `~/.local/bin` (no sudo needed)
+- Minimal dependencies, fast startup
+- SELinux compatible
 
 ## Customization
 
