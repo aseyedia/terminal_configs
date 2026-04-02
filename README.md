@@ -1,7 +1,7 @@
 # Terminal Configurations
 
 Optimized shell and terminal configurations for Bash, Zsh, and Tmux.
-**Optimized for RHEL/Enterprise Linux** - Build modern CLI tools from source when package managers are outdated.
+**Optimized for RHEL/Enterprise Linux** - Downloads static binaries of modern CLI tools (no compilation required!).
 
 ## Quick Install
 
@@ -16,51 +16,52 @@ cd terminal_configs
 - **`.bashrc`** - Git-aware prompt, FZF, lazy-loaded NVM, extensive aliases
 - **`.zshrc`** - Pure prompt, FZF, smart plugins, auto-completion (when zsh available)
 - **`tmux.conf`** - Browser-like tabs, mouse support, custom keybindings
-- **`install.sh`** - Interactive installer with tool building from source
+- **`install.sh`** - Interactive installer with static binary downloads
 
 ## Installation Options
 
 The installer offers three modes:
-1. **Full installation** - Configs + build tools from source
-2. **Configs only** - Skip tool building (faster)
-3. **Tools only** - Build tools, skip configs
+1. **Full installation** - Configs + download tools (static binaries)
+2. **Configs only** - Skip tool downloads (faster)
+3. **Tools only** - Download tools, skip configs
 
-### Building Tools from Source
+### Downloading Static Binaries
 
-The installer can build these modern CLI tools from source:
+The installer downloads static musl binaries for these modern CLI tools:
 - **fd** - Fast file finder (essential)
 - **zoxide** - Smarter cd command (essential)
 - **ripgrep** - Fast text search (essential)
 - **bat** - Better cat with syntax highlighting (optional)
 - **eza** - Modern ls replacement (optional)
 
+**Why static binaries?**
+- ✅ **No compilation** - Installs in seconds, not minutes
+- ✅ **No Rust/build tools needed** - Just curl and tar
+- ✅ **Portable** - Works across different Linux distributions
+- ✅ **No dependencies** - Statically linked musl binaries
+
 This is ideal for RHEL 9/CentOS/Enterprise Linux where:
 - Homebrew isn't feasible
 - DNF/YUM repos have outdated versions
 - You need modern tools without admin privileges
+- Building from source is too slow or complex
 
-### Prerequisites for Building
+### Prerequisites
+
+Minimal dependencies (usually already installed):
 
 ```bash
-# RHEL/CentOS/Rocky Linux
-sudo dnf groupinstall 'Development Tools'
-sudo dnf install openssl-devel
-
-# Ubuntu/Debian
-sudo apt update && sudo apt install build-essential libssl-dev pkg-config
-
-# Install Rust (required for building tools)
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+# Just need curl and tar (typically pre-installed)
+# If missing on RHEL/CentOS:
+sudo dnf install curl tar gzip
 ```
-
-The installer will guide you through this and can install Rust automatically.
 
 ## Tools Overview
 
 **Auto-installed:**
 - **fzf** - Fuzzy finder (auto-installed by configs)
 
-**Build from source (via installer):**
+**Downloaded as static binaries (via installer):**
 - **fd** - Fast file finder, respects .gitignore
 - **zoxide** - Smarter cd with frecency algorithm
 - **ripgrep** - Lightning fast grep alternative
@@ -87,27 +88,23 @@ This configuration is optimized for enterprise Linux servers:
 
 ### Quick Server Setup
 
-For RHEL 9/CentOS/Rocky Linux servers without homebrew:
+For RHEL 9/CentOS/Rocky Linux servers:
 
 ```bash
-# 1. Install build dependencies
-sudo dnf groupinstall 'Development Tools'
-sudo dnf install openssl-devel git
-
-# 2. Install Rust (for building modern tools)
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-source $HOME/.cargo/env
-
-# 3. Clone and run installer
+# 1. Clone the repo
 git clone https://github.com/aseyedia/terminal_configs.git ~/terminal_configs
 cd ~/terminal_configs
+
+# 2. Run installer (curl and tar are typically pre-installed)
 ./install.sh
 
-# 4. Choose option 1 (full installation) to build fd, zoxide, and ripgrep from source
-# 5. Restart your shell or: source ~/.bashrc
+# 3. Choose option 1 (full installation) to download fd, zoxide, and ripgrep
+# 4. Restart your shell or: source ~/.bashrc
 ```
 
 Tools will be installed to `~/.local/bin` (already in PATH via the .bashrc).
+
+**Installation time:** ~30 seconds (vs 15+ minutes building from source!)
 
 ## Customization
 

@@ -4,7 +4,7 @@
 # Terminal Configs Installer (Optimized for RHEL/Enterprise Linux)
 # ============================================================================
 # Simple installer: backup old configs, install new ones
-# Supports building modern CLI tools from source (fd, zoxide, ripgrep)
+# Downloads static musl binaries for modern CLI tools (no compilation needed!)
 # ============================================================================
 
 set -e
@@ -41,172 +41,161 @@ ask_yes_no() {
     [[ "$response" =~ ^[Yy]$ ]]
 }
 
-ensure_build_deps() {
+detect_architecture() {
+    local arch=$(uname -m)
+    case "$arch" in
+        x86_64) echo "x86_64" ;;
+        aarch64|arm64) echo "aarch64" ;;
+        armv7l) echo "armv7" ;;
+        *) echo "unknown" ;;
+    esac
+}
+
+ensure_dependencies() {
     echo ""
-    echo -e "${BLUE}Checking build dependencies...${NC}"
+    echo -e "${BLUE}Checking dependencies...${NC}"
 
     local missing_deps=()
 
-    # Check for essential build tools
-    command -v gcc &>/dev/null || missing_deps+=("gcc")
-    command -v make &>/dev/null || missing_deps+=("make")
-    command -v git &>/dev/null || missing_deps+=("git")
-
-    # Check for Rust/Cargo (needed for fd, ripgrep, bat, eza)
-    if ! command -v cargo &>/dev/null; then
-        missing_deps+=("cargo")
-    fi
+    # Check for essential tools
+    command -v curl &>/dev/null || missing_deps+=("curl")
+    command -v tar &>/dev/null || missing_deps+=("tar")
+    command -v gzip &>/dev/null || missing_deps+=("gzip")
 
     if [[ ${#missing_deps[@]} -gt 0 ]]; then
         echo -e "${YELLOW}Missing dependencies: ${missing_deps[*]}${NC}"
         echo ""
-
-        # Detect package manager
-        if command -v dnf &>/dev/null; then
-            echo -e "${BLUE}Install with:${NC}"
-            echo "  sudo dnf groupinstall 'Development Tools'"
-            echo "  sudo dnf install openssl-devel"
-            if [[ " ${missing_deps[@]} " =~ " cargo " ]]; then
-                echo "  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh"
-            fi
-        elif command -v yum &>/dev/null; then
-            echo -e "${BLUE}Install with:${NC}"
-            echo "  sudo yum groupinstall 'Development Tools'"
-            echo "  sudo yum install openssl-devel"
-            if [[ " ${missing_deps[@]} " =~ " cargo " ]]; then
-                echo "  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh"
-            fi
-        elif command -v apt &>/dev/null; then
-            echo -e "${BLUE}Install with:${NC}"
-            echo "  sudo apt update && sudo apt install build-essential libssl-dev pkg-config"
-            if [[ " ${missing_deps[@]} " =~ " cargo " ]]; then
-                echo "  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh"
-            fi
-        fi
-
+        echo -e "${BLUE}These are usually pre-installed. Install with your package manager if needed.${NC}"
         echo ""
-        if ask_yes_no "Continue anyway?"; then
-            return 0
-        else
+        if ! ask_yes_no "Continue anyway?"; then
             echo -e "${RED}Aborting installation.${NC}"
             exit 1
         fi
+    else
+        echo -e "${GREEN}  ✓ All dependencies present${NC}"
     fi
-
-    echo -e "${GREEN}  ✓ All build dependencies present${NC}"
 }
 
-install_rust_if_needed() {
-    if ! command -v cargo &>/dev/null; then
-        echo ""
-        echo -e "${YELLOW}Rust/Cargo not found. It's required to build fd, ripgrep, bat, and eza.${NC}"
-        if ask_yes_no "Install Rust now?"; then
-            echo -e "${BLUE}Installing Rust...${NC}"
-            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-            source "$HOME/.cargo/env"
-            echo -e "${GREEN}  ✓ Rust installed${NC}"
-        else
-            echo -e "${YELLOW}Skipping tools that require Rust${NC}"
-            return 1
-        fi
+download_fd() {
+    echo ""
+    echo -e "${BLUE}Downloading fd...${NC}"
+
+    local arch=$(detect_architecture)
+    local version="v10.2.0"  # Update as needed
+    local filename="fd-${version}-${arch}-unknown-linux-musl.tar.gz"
+    local url="https://github.com/sharkdp/fd/releases/download/${version}/${filename}"
+
+    mkdir -p "$BUILD_DIR"
+    cd "$BUILD_DIR"
+
+    if curl -fsSL "$url" -o "$filename" 2>/dev/null; then
+        tar -xzf "$filename"
+        mkdir -p "$INSTALL_DIR/bin"
+        cp fd-*/fd "$INSTALL_DIR/bin/"
+        echo -e "${GREEN}  ✓ fd installed to $INSTALL_DIR/bin/fd${NC}"
+    else
+        echo -e "${RED}  ✗ Failed to download fd${NC}"
+        return 1
     fi
-    return 0
 }
 
-build_fd() {
+download_ripgrep() {
     echo ""
-    echo -e "${BLUE}Building fd from source...${NC}"
+    echo -e "${BLUE}Downloading ripgrep...${NC}"
+
+    local arch=$(detect_architecture)
+    local version="14.1.1"  # Update as needed
+    local filename="ripgrep-${version}-${arch}-unknown-linux-musl.tar.gz"
+    local url="https://github.com/BurntSushi/ripgrep/releases/download/${version}/${filename}"
 
     mkdir -p "$BUILD_DIR"
     cd "$BUILD_DIR"
 
-    git clone --depth 1 https://github.com/sharkdp/fd.git
-    cd fd
-    cargo build --release
-
-    mkdir -p "$INSTALL_DIR/bin"
-    cp target/release/fd "$INSTALL_DIR/bin/"
-
-    echo -e "${GREEN}  ✓ fd installed to $INSTALL_DIR/bin/fd${NC}"
+    if curl -fsSL "$url" -o "$filename" 2>/dev/null; then
+        tar -xzf "$filename"
+        mkdir -p "$INSTALL_DIR/bin"
+        cp ripgrep-*/rg "$INSTALL_DIR/bin/"
+        echo -e "${GREEN}  ✓ ripgrep installed to $INSTALL_DIR/bin/rg${NC}"
+    else
+        echo -e "${RED}  ✗ Failed to download ripgrep${NC}"
+        return 1
+    fi
 }
 
-build_ripgrep() {
+download_zoxide() {
     echo ""
-    echo -e "${BLUE}Building ripgrep from source...${NC}"
+    echo -e "${BLUE}Downloading zoxide...${NC}"
+
+    local arch=$(detect_architecture)
+    local version="v0.9.6"  # Update as needed
+    local filename="zoxide-${version}-${arch}-unknown-linux-musl.tar.gz"
+    local url="https://github.com/ajeetdsouza/zoxide/releases/download/${version}/${filename}"
 
     mkdir -p "$BUILD_DIR"
     cd "$BUILD_DIR"
 
-    git clone --depth 1 https://github.com/BurntSushi/ripgrep.git
-    cd ripgrep
-    cargo build --release
-
-    mkdir -p "$INSTALL_DIR/bin"
-    cp target/release/rg "$INSTALL_DIR/bin/"
-
-    echo -e "${GREEN}  ✓ ripgrep installed to $INSTALL_DIR/bin/rg${NC}"
+    if curl -fsSL "$url" -o "$filename" 2>/dev/null; then
+        tar -xzf "$filename"
+        mkdir -p "$INSTALL_DIR/bin"
+        cp zoxide "$INSTALL_DIR/bin/"
+        echo -e "${GREEN}  ✓ zoxide installed to $INSTALL_DIR/bin/zoxide${NC}"
+    else
+        echo -e "${RED}  ✗ Failed to download zoxide${NC}"
+        return 1
+    fi
 }
 
-build_zoxide() {
+download_bat() {
     echo ""
-    echo -e "${BLUE}Building zoxide from source...${NC}"
+    echo -e "${BLUE}Downloading bat...${NC}"
+
+    local arch=$(detect_architecture)
+    local version="v0.24.0"  # Update as needed
+    local filename="bat-${version}-${arch}-unknown-linux-musl.tar.gz"
+    local url="https://github.com/sharkdp/bat/releases/download/${version}/${filename}"
 
     mkdir -p "$BUILD_DIR"
     cd "$BUILD_DIR"
 
-    git clone --depth 1 https://github.com/ajeetdsouza/zoxide.git
-    cd zoxide
-    cargo build --release
-
-    mkdir -p "$INSTALL_DIR/bin"
-    cp target/release/zoxide "$INSTALL_DIR/bin/"
-
-    echo -e "${GREEN}  ✓ zoxide installed to $INSTALL_DIR/bin/zoxide${NC}"
+    if curl -fsSL "$url" -o "$filename" 2>/dev/null; then
+        tar -xzf "$filename"
+        mkdir -p "$INSTALL_DIR/bin"
+        cp bat-*/bat "$INSTALL_DIR/bin/"
+        echo -e "${GREEN}  ✓ bat installed to $INSTALL_DIR/bin/bat${NC}"
+    else
+        echo -e "${RED}  ✗ Failed to download bat${NC}"
+        return 1
+    fi
 }
 
-build_bat() {
+download_eza() {
     echo ""
-    echo -e "${BLUE}Building bat from source...${NC}"
+    echo -e "${BLUE}Downloading eza...${NC}"
+
+    local arch=$(detect_architecture)
+    local version="v0.20.10"  # Update as needed
+    local filename="eza_${arch}-unknown-linux-musl.tar.gz"
+    local url="https://github.com/eza-community/eza/releases/download/${version}/${filename}"
 
     mkdir -p "$BUILD_DIR"
     cd "$BUILD_DIR"
 
-    git clone --depth 1 https://github.com/sharkdp/bat.git
-    cd bat
-    cargo build --release
-
-    mkdir -p "$INSTALL_DIR/bin"
-    cp target/release/bat "$INSTALL_DIR/bin/"
-
-    echo -e "${GREEN}  ✓ bat installed to $INSTALL_DIR/bin/bat${NC}"
+    if curl -fsSL "$url" -o "$filename" 2>/dev/null; then
+        tar -xzf "$filename"
+        mkdir -p "$INSTALL_DIR/bin"
+        cp eza "$INSTALL_DIR/bin/"
+        echo -e "${GREEN}  ✓ eza installed to $INSTALL_DIR/bin/eza${NC}"
+    else
+        echo -e "${RED}  ✗ Failed to download eza${NC}"
+        return 1
+    fi
 }
 
-build_eza() {
-    echo ""
-    echo -e "${BLUE}Building eza from source...${NC}"
-
-    mkdir -p "$BUILD_DIR"
-    cd "$BUILD_DIR"
-
-    git clone --depth 1 https://github.com/eza-community/eza.git
-    cd eza
-    cargo build --release
-
-    mkdir -p "$INSTALL_DIR/bin"
-    cp target/release/eza "$INSTALL_DIR/bin/"
-
-    echo -e "${GREEN}  ✓ eza installed to $INSTALL_DIR/bin/eza${NC}"
-}
-
-install_tools_from_source() {
+install_tools() {
     echo ""
     echo -e "${BLUE}═══════════════════════════════════════${NC}"
-    echo -e "${BLUE}  Tool Installation from Source${NC}"
+    echo -e "${BLUE}  Tool Installation (Static Binaries)${NC}"
     echo -e "${BLUE}═══════════════════════════════════════${NC}"
-
-    if ! install_rust_if_needed; then
-        return
-    fi
 
     # Essential tools for the user
     local essential_tools=("fd" "zoxide" "ripgrep")
@@ -214,15 +203,15 @@ install_tools_from_source() {
 
     echo ""
     echo -e "${BLUE}Essential tools (fd, zoxide, ripgrep)${NC}"
-    if ask_yes_no "Build essential tools from source?"; then
+    if ask_yes_no "Download essential tools?"; then
         for tool in "${essential_tools[@]}"; do
             if command -v "$tool" &>/dev/null || command -v "${tool/ripgrep/rg}" &>/dev/null; then
                 echo -e "${YELLOW}  ⊘ $tool already installed, skipping${NC}"
             else
                 case "$tool" in
-                    fd) build_fd ;;
-                    zoxide) build_zoxide ;;
-                    ripgrep) build_ripgrep ;;
+                    fd) download_fd ;;
+                    zoxide) download_zoxide ;;
+                    ripgrep) download_ripgrep ;;
                 esac
             fi
         done
@@ -230,14 +219,14 @@ install_tools_from_source() {
 
     echo ""
     echo -e "${BLUE}Optional tools (bat, eza)${NC}"
-    if ask_yes_no "Build optional tools from source?"; then
+    if ask_yes_no "Download optional tools?"; then
         for tool in "${optional_tools[@]}"; do
             if command -v "$tool" &>/dev/null; then
                 echo -e "${YELLOW}  ⊘ $tool already installed, skipping${NC}"
             else
                 case "$tool" in
-                    bat) build_bat ;;
-                    eza) build_eza ;;
+                    bat) download_bat ;;
+                    eza) download_eza ;;
                 esac
             fi
         done
@@ -355,9 +344,6 @@ show_complete() {
 
     echo -e "${BLUE}Next steps:${NC}"
     echo "  • Restart your terminal or run: source ~/.bashrc"
-    if [[ -f "$HOME/.cargo/env" ]]; then
-        echo "  • Load Rust environment: source $HOME/.cargo/env"
-    fi
     echo ""
 }
 
@@ -371,16 +357,16 @@ main() {
 
     echo ""
     echo -e "${BLUE}Installation Options:${NC}"
-    echo "  1. Full installation (configs + tools from source)"
-    echo "  2. Configs only (skip tool building)"
+    echo "  1. Full installation (configs + tools)"
+    echo "  2. Configs only (skip tool downloads)"
     echo "  3. Tools only (skip configs)"
     echo ""
     read -r -p "$(echo -e "${BLUE}Choose option [1/2/3]: ${NC}")" choice
 
     case "$choice" in
         1)
-            ensure_build_deps
-            install_tools_from_source
+            ensure_dependencies
+            install_tools
             install_configs
             install_kickstart
             ;;
@@ -389,8 +375,8 @@ main() {
             install_kickstart
             ;;
         3)
-            ensure_build_deps
-            install_tools_from_source
+            ensure_dependencies
+            install_tools
             ;;
         *)
             echo -e "${RED}Invalid option. Exiting.${NC}"
