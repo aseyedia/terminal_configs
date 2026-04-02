@@ -191,11 +191,73 @@ download_eza() {
     fi
 }
 
+install_via_homebrew() {
+    echo ""
+    echo -e "${BLUE}Installing tools via Homebrew...${NC}"
+
+    local tools=("fd" "zoxide" "ripgrep" "bat" "eza")
+    local installed_count=0
+
+    for tool in "${tools[@]}"; do
+        # Check if already installed
+        if command -v "$tool" &>/dev/null || command -v "${tool/ripgrep/rg}" &>/dev/null; then
+            echo -e "${YELLOW}  ⊘ $tool already installed, skipping${NC}"
+            continue
+        fi
+
+        # Install via brew
+        local brew_name="$tool"
+        if [[ "$tool" == "ripgrep" ]]; then
+            brew_name="ripgrep"
+        fi
+
+        echo -e "${BLUE}  Installing $tool...${NC}"
+        if brew install "$brew_name" &>/dev/null; then
+            echo -e "${GREEN}  ✓ $tool installed${NC}"
+            ((installed_count++))
+        else
+            echo -e "${RED}  ✗ Failed to install $tool${NC}"
+        fi
+    done
+
+    if [[ $installed_count -gt 0 ]]; then
+        echo ""
+        echo -e "${GREEN}Installed $installed_count tool(s) via Homebrew${NC}"
+    fi
+}
+
 install_tools() {
     echo ""
     echo -e "${BLUE}═══════════════════════════════════════${NC}"
-    echo -e "${BLUE}  Tool Installation (Static Binaries)${NC}"
+    echo -e "${BLUE}  Tool Installation${NC}"
     echo -e "${BLUE}═══════════════════════════════════════${NC}"
+
+    # Check if homebrew is available
+    local has_brew=false
+    if command -v brew &>/dev/null; then
+        has_brew=true
+    fi
+
+    echo ""
+    if [[ "$has_brew" == "true" ]]; then
+        echo -e "${BLUE}Installation method:${NC}"
+        echo "  1. Static binaries (recommended for RHEL/servers)"
+        echo "  2. Homebrew (if you prefer brew)"
+        echo ""
+        read -r -p "$(echo -e "${BLUE}Choose method [1/2]: ${NC}")" method_choice
+
+        case "$method_choice" in
+            2)
+                install_via_homebrew
+                return
+                ;;
+            1|*)
+                # Continue with static binaries
+                ;;
+        esac
+    else
+        echo -e "${YELLOW}Homebrew not detected. Using static binaries.${NC}"
+    fi
 
     # Essential tools for the user
     local essential_tools=("fd" "zoxide" "ripgrep")

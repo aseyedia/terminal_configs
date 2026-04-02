@@ -34,6 +34,10 @@ The installer downloads static musl binaries for these modern CLI tools:
 - **bat** - Better cat with syntax highlighting (optional)
 - **eza** - Modern ls replacement (optional)
 
+**Installation methods:**
+- **Static binaries** (recommended for RHEL/servers) - Fast, no dependencies
+- **Homebrew** (optional) - Available if you have brew installed
+
 **Why static binaries?**
 - ✅ **No compilation** - Installs in seconds, not minutes
 - ✅ **No Rust/build tools needed** - Just curl and tar
@@ -41,19 +45,24 @@ The installer downloads static musl binaries for these modern CLI tools:
 - ✅ **No dependencies** - Statically linked musl binaries
 
 This is ideal for RHEL 9/CentOS/Enterprise Linux where:
-- Homebrew isn't feasible
+- Homebrew isn't feasible or you prefer not to use it
 - DNF/YUM repos have outdated versions
 - You need modern tools without admin privileges
 - Building from source is too slow or complex
+
+**Note:** If you have Homebrew installed, the installer will offer you the choice between static binaries and brew installation.
 
 ### Prerequisites
 
 Minimal dependencies (usually already installed):
 
 ```bash
-# Just need curl and tar (typically pre-installed)
+# For static binaries: just need curl and tar (typically pre-installed)
 # If missing on RHEL/CentOS:
 sudo dnf install curl tar gzip
+
+# For Homebrew method (optional):
+# Install Homebrew from https://brew.sh if you prefer
 ```
 
 ## Tools Overview
@@ -67,6 +76,8 @@ sudo dnf install curl tar gzip
 - **ripgrep** - Lightning fast grep alternative
 - **bat** - Cat clone with syntax highlighting
 - **eza** - Modern ls with git integration
+
+*Can also be installed via Homebrew if detected*
 
 **Optional (install separately):**
 - **neovim** - Modern vim
